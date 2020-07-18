@@ -6,7 +6,7 @@ class RippleTank {
     static scaleFactor = 5;
     playing: boolean = false;
     static instance: RippleTank;
-    static DEBUG = true;
+    static DEBUG = false;
     static GRID_WIDTH = 80;
     static GRID_HEIGHT = 100;
 
@@ -138,6 +138,10 @@ class RippleTank {
     resetNSquared() { this.wasmModule.instance.exports.resetNSquared(); }
 
 //SETTINGS
+    setFrequency(value) {
+        if (value > 10) {value = 10;} 
+        this.wasmModule.instance.exports.setFrequency(value); 
+    }
     setSpeed(value) { this.wasmModule.instance.exports.setSpeed(value); }
     setFriction(value) { this.wasmModule.instance.exports.setFriction(value); }
     setHardBoundary(value) { this.wasmModule.instance.exports.setHardBoundary(value); }
@@ -145,11 +149,11 @@ class RippleTank {
     setMaxAmplitude(value) { this.wasmModule.instance.exports.setMaxAmplitude(value); }
     setColour(value) { this.wasmModule.instance.exports.setColour(value); }
     getSpeed() { return this.wasmModule.instance.exports.SPEED.valueOf(); }
+    getFrequency() { return this.wasmModule.instance.exports.FREQUENCY.valueOf(); }
     getFriction() { return this.wasmModule.instance.exports.FRICTION.valueOf(); }
     getHardBoundary() { return this.wasmModule.instance.exports.HARD_BOUNDARY.valueOf(); }
     getHighContrast() { return this.wasmModule.instance.exports.HIGH_CONTRAST.valueOf(); }
     getMaxAmplitude() { return this.wasmModule.instance.exports.MAX_AMPLITUDE.valueOf(); }
     getColour() { return this.wasmModule.instance.exports.COLOUR.valueOf(); }
-
 
 }

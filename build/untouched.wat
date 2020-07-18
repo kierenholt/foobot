@@ -53,7 +53,7 @@
  (global $assembly/index/HARD_BOUNDARY (mut i32) (i32.const 2))
  (global $assembly/index/HIGH_CONTRAST (mut i32) (i32.const 0))
  (global $assembly/index/MAX_AMPLITUDE (mut f32) (f32.const 1))
- (global $assembly/index/COLOUR (mut i32) (i32.const 3))
+ (global $assembly/index/COLOUR (mut i32) (i32.const 1))
  (global $assembly/index/NUMBER (mut f32) (f32.const 1.3524999618530273))
  (global $~lib/ASC_SHRINK_LEVEL i32 (i32.const 0))
  (global $~lib/math/NativeMath.PI f64 (f64.const 3.141592653589793))
@@ -2953,157 +2953,6 @@
   local.get $2
   f32.store
  )
- (func $assembly/index/writePositionToBitmap (param $0 i32) (param $1 i32) (param $2 f32)
-  (local $3 i32)
-  i32.const 127
-  local.set $3
-  global.get $assembly/index/HIGH_CONTRAST
-  if
-   local.get $2
-   f32.const 0
-   f32.gt
-   if (result i32)
-    local.get $2
-    global.get $assembly/index/MAX_AMPLITUDE
-    f32.div
-    f32.sqrt
-    f32.const 127
-    f32.mul
-    i32.trunc_f32_s
-    i32.const 127
-    i32.add
-   else
-    i32.const 127
-    f64.const -1
-    local.get $2
-    f64.promote_f32
-    f64.mul
-    global.get $assembly/index/MAX_AMPLITUDE
-    f64.promote_f32
-    f64.div
-    f64.sqrt
-    f64.const 127
-    f64.mul
-    i32.trunc_f64_s
-    i32.sub
-   end
-   local.set $3
-  else
-   local.get $2
-   f32.const 127
-   f32.mul
-   global.get $assembly/index/MAX_AMPLITUDE
-   f32.div
-   i32.trunc_f32_s
-   i32.const 127
-   i32.add
-   local.set $3
-  end
-  local.get $2
-  global.get $assembly/index/MAX_AMPLITUDE
-  f32.gt
-  if
-   i32.const 255
-   local.set $3
-  end
-  local.get $2
-  f32.const -1
-  global.get $assembly/index/MAX_AMPLITUDE
-  f32.mul
-  f32.lt
-  if
-   i32.const 0
-   local.set $3
-  end
-  global.get $assembly/index/COLOUR
-  i32.const 3
-  i32.eq
-  if
-   local.get $0
-   i32.const 4
-   i32.mul
-   local.get $1
-   global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
-   i32.mul
-   i32.const 4
-   i32.mul
-   i32.add
-   local.get $3
-   i32.store8
-   local.get $0
-   i32.const 4
-   i32.mul
-   local.get $1
-   global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
-   i32.mul
-   i32.const 4
-   i32.mul
-   i32.add
-   i32.const 1
-   i32.add
-   local.get $3
-   i32.store8
-   local.get $0
-   i32.const 4
-   i32.mul
-   local.get $1
-   global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
-   i32.mul
-   i32.const 4
-   i32.mul
-   i32.add
-   i32.const 2
-   i32.add
-   local.get $3
-   i32.store8
-  else
-   local.get $0
-   i32.const 4
-   i32.mul
-   local.get $1
-   global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
-   i32.mul
-   i32.const 4
-   i32.mul
-   i32.add
-   global.get $assembly/index/COLOUR
-   i32.add
-   local.get $3
-   i32.store8
-  end
- )
- (func $assembly/index/disturbPoint (param $0 i32) (param $1 i32) (param $2 f32)
-  local.get $0
-  i32.const 4
-  i32.mul
-  local.get $1
-  global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
-  i32.mul
-  i32.const 4
-  i32.mul
-  i32.add
-  global.get $assembly/index/currentPositionMemStart
-  i32.add
-  local.get $2
-  f32.store
-  local.get $0
-  i32.const 4
-  i32.mul
-  local.get $1
-  global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
-  i32.mul
-  i32.const 4
-  i32.mul
-  i32.add
-  global.get $assembly/index/prevPositionMemStart
-  i32.add
-  local.get $2
-  f32.store
-  local.get $0
-  local.get $1
-  local.get $2
-  call $assembly/index/writePositionToBitmap
- )
  (func $assembly/index/setNSquared (param $0 i32) (param $1 i32) (param $2 f32)
   local.get $0
   i32.const 4
@@ -3118,6 +2967,81 @@
   i32.add
   local.get $2
   f32.store
+ )
+ (func $assembly/index/setBlack
+  (local $0 i32)
+  (local $1 i32)
+  (local $2 i32)
+  (local $3 i32)
+  i32.const 0
+  local.set $0
+  loop $for-loop|0
+   local.get $0
+   global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
+   i32.lt_s
+   local.set $1
+   local.get $1
+   if
+    i32.const 0
+    local.set $2
+    loop $for-loop|1
+     local.get $2
+     global.get $assembly/index/RIPPLE_IMAGE_PIXEL_HEIGHT
+     i32.lt_s
+     local.set $3
+     local.get $3
+     if
+      local.get $0
+      i32.const 4
+      i32.mul
+      local.get $2
+      global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
+      i32.mul
+      i32.const 4
+      i32.mul
+      i32.add
+      i32.const 0
+      i32.store8
+      local.get $0
+      i32.const 4
+      i32.mul
+      local.get $2
+      global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
+      i32.mul
+      i32.const 4
+      i32.mul
+      i32.add
+      i32.const 1
+      i32.add
+      i32.const 0
+      i32.store8
+      local.get $0
+      i32.const 4
+      i32.mul
+      local.get $2
+      global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
+      i32.mul
+      i32.const 4
+      i32.mul
+      i32.add
+      i32.const 2
+      i32.add
+      i32.const 0
+      i32.store8
+      local.get $2
+      i32.const 1
+      i32.add
+      local.set $2
+      br $for-loop|1
+     end
+    end
+    local.get $0
+    i32.const 1
+    i32.add
+    local.set $0
+    br $for-loop|0
+   end
+  end
  )
  (func $assembly/index/init (param $0 i32) (param $1 i32)
   (local $2 i32)
@@ -3254,10 +3178,6 @@
       call $assembly/index/setVelocity
       local.get $6
       local.get $4
-      f32.const 0
-      call $assembly/index/disturbPoint
-      local.get $6
-      local.get $4
       f32.const 1
       call $assembly/index/setNSquared
       local.get $6
@@ -3274,6 +3194,7 @@
     br $for-loop|0
    end
   end
+  call $assembly/index/setBlack
  )
  (func $assembly/index/getAbsorberType (param $0 i32) (param $1 i32) (result i32)
   local.get $0
@@ -3459,6 +3380,125 @@
   global.get $assembly/index/N_SQUARED_MEM_START
   i32.add
   f32.load
+ )
+ (func $assembly/index/writePositionToBitmap (param $0 i32) (param $1 i32) (param $2 f32)
+  (local $3 i32)
+  i32.const 127
+  local.set $3
+  global.get $assembly/index/HIGH_CONTRAST
+  if
+   local.get $2
+   f32.const 0
+   f32.gt
+   if (result i32)
+    local.get $2
+    global.get $assembly/index/MAX_AMPLITUDE
+    f32.div
+    f32.sqrt
+    f32.const 127
+    f32.mul
+    i32.trunc_f32_s
+    i32.const 127
+    i32.add
+   else
+    i32.const 127
+    f64.const -1
+    local.get $2
+    f64.promote_f32
+    f64.mul
+    global.get $assembly/index/MAX_AMPLITUDE
+    f64.promote_f32
+    f64.div
+    f64.sqrt
+    f64.const 127
+    f64.mul
+    i32.trunc_f64_s
+    i32.sub
+   end
+   local.set $3
+  else
+   local.get $2
+   f32.const 127
+   f32.mul
+   global.get $assembly/index/MAX_AMPLITUDE
+   f32.div
+   i32.trunc_f32_s
+   i32.const 127
+   i32.add
+   local.set $3
+  end
+  local.get $2
+  global.get $assembly/index/MAX_AMPLITUDE
+  f32.gt
+  if
+   i32.const 255
+   local.set $3
+  end
+  local.get $2
+  f32.const -1
+  global.get $assembly/index/MAX_AMPLITUDE
+  f32.mul
+  f32.lt
+  if
+   i32.const 0
+   local.set $3
+  end
+  global.get $assembly/index/COLOUR
+  i32.const 3
+  i32.eq
+  if
+   local.get $0
+   i32.const 4
+   i32.mul
+   local.get $1
+   global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
+   i32.mul
+   i32.const 4
+   i32.mul
+   i32.add
+   local.get $3
+   i32.store8
+   local.get $0
+   i32.const 4
+   i32.mul
+   local.get $1
+   global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
+   i32.mul
+   i32.const 4
+   i32.mul
+   i32.add
+   i32.const 1
+   i32.add
+   local.get $3
+   i32.store8
+   local.get $0
+   i32.const 4
+   i32.mul
+   local.get $1
+   global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
+   i32.mul
+   i32.const 4
+   i32.mul
+   i32.add
+   i32.const 2
+   i32.add
+   local.get $3
+   i32.store8
+  else
+   local.get $0
+   i32.const 4
+   i32.mul
+   local.get $1
+   global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
+   i32.mul
+   i32.const 4
+   i32.mul
+   i32.add
+   global.get $assembly/index/COLOUR
+   i32.add
+   local.get $3
+   i32.store8
+  end
  )
  (func $assembly/index/setPosition (param $0 i32) (param $1 i32) (param $2 f32)
   local.get $0
@@ -3912,6 +3952,38 @@
     br $for-loop|0
    end
   end
+ )
+ (func $assembly/index/disturbPoint (param $0 i32) (param $1 i32) (param $2 f32)
+  local.get $0
+  i32.const 4
+  i32.mul
+  local.get $1
+  global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
+  i32.mul
+  i32.const 4
+  i32.mul
+  i32.add
+  global.get $assembly/index/currentPositionMemStart
+  i32.add
+  local.get $2
+  f32.store
+  local.get $0
+  i32.const 4
+  i32.mul
+  local.get $1
+  global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
+  i32.mul
+  i32.const 4
+  i32.mul
+  i32.add
+  global.get $assembly/index/prevPositionMemStart
+  i32.add
+  local.get $2
+  f32.store
+  local.get $0
+  local.get $1
+  local.get $2
+  call $assembly/index/writePositionToBitmap
  )
  (func $assembly/index/disturbBall (param $0 i32) (param $1 i32) (param $2 i32) (param $3 f32)
   (local $4 i32)
@@ -5985,81 +6057,6 @@
  (func $assembly/index/setMaxAmplitude (param $0 f32)
   local.get $0
   global.set $assembly/index/MAX_AMPLITUDE
- )
- (func $assembly/index/setBlack
-  (local $0 i32)
-  (local $1 i32)
-  (local $2 i32)
-  (local $3 i32)
-  i32.const 0
-  local.set $0
-  loop $for-loop|0
-   local.get $0
-   global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
-   i32.lt_s
-   local.set $1
-   local.get $1
-   if
-    i32.const 0
-    local.set $2
-    loop $for-loop|1
-     local.get $2
-     global.get $assembly/index/RIPPLE_IMAGE_PIXEL_HEIGHT
-     i32.lt_s
-     local.set $3
-     local.get $3
-     if
-      local.get $0
-      i32.const 4
-      i32.mul
-      local.get $2
-      global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
-      i32.mul
-      i32.const 4
-      i32.mul
-      i32.add
-      i32.const 0
-      i32.store8
-      local.get $0
-      i32.const 4
-      i32.mul
-      local.get $2
-      global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
-      i32.mul
-      i32.const 4
-      i32.mul
-      i32.add
-      i32.const 1
-      i32.add
-      i32.const 0
-      i32.store8
-      local.get $0
-      i32.const 4
-      i32.mul
-      local.get $2
-      global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
-      i32.mul
-      i32.const 4
-      i32.mul
-      i32.add
-      i32.const 2
-      i32.add
-      i32.const 0
-      i32.store8
-      local.get $2
-      i32.const 1
-      i32.add
-      local.set $2
-      br $for-loop|1
-     end
-    end
-    local.get $0
-    i32.const 1
-    i32.add
-    local.set $0
-    br $for-loop|0
-   end
-  end
  )
  (func $assembly/index/setColour (param $0 i32)
   local.get $0

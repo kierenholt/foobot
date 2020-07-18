@@ -36,11 +36,11 @@ class Scene1 extends Phaser.Scene {
             RippleTank.instance.imageWidth, RippleTank.instance.imageHeight).setStrokeStyle(1,0x0);
         this.add.existing(this.tankRectangle);
 
-        new Glass(this,SPAWN_X,SPAWN_Y);
-        new PointOscillator(this, SPAWN_X, SPAWN_Y += SPAWN_VERTICAL_SPACING);
-        new LineOscillator(this, SPAWN_X, SPAWN_Y += SPAWN_VERTICAL_SPACING);
-        new Slit(this, SPAWN_X, SPAWN_Y += 2*SPAWN_VERTICAL_SPACING);
-        new DoubleSlit(this, SPAWN_X, SPAWN_Y += 2*SPAWN_VERTICAL_SPACING);
+        new Glass(this,22,24);
+        new PointOscillator(this, 22, 150);
+        new LineOscillator(this, 70, 125);
+        new Slit(this, 22, 200);
+        new DoubleSlit(this, 70, 200);
     }
 
     update () {

@@ -145,7 +145,10 @@ class Glass extends DraggableComponent {
 
         //must happen after super
         this.n = Glass.START_N;
-        ntext.valueSetter = function(comp) { var comp = comp; return (value)=>{comp.n = value; comp.update()} }(this);
+        ntext.valueSetter = function(comp) { 
+            var comp = comp; 
+            return (value)=>{if (value < 1) value = 1;comp.n = value; comp.update()} 
+        }(this);
         ntext.valueGetter = function(comp) { var comp = comp; return ()=>{return comp.n} }(this);
         
         angleText.valueSetter = function(comp) { var comp = comp; return (value)=>{comp.angle = value; comp.update()} }(this);
@@ -197,7 +200,7 @@ class Glass extends DraggableComponent {
 
 class Slit extends DraggableComponent {
     static WIDTH = 10;
-    static START_TOP_HEIGHT = 50;
+    static START_TOP_HEIGHT = 45;
     static START_SLIT_WIDTH = 10;
     static ON_DRAG_SLIT_WIDTH = 25;
     static ON_DRAG_TOP_HEIGHT = 1000;
@@ -285,7 +288,7 @@ class Slit extends DraggableComponent {
 
 class DoubleSlit extends DraggableComponent {
     static WIDTH = 10;
-    static START_TOP_HEIGHT = 50;
+    static START_TOP_HEIGHT = 35;
     static START_SLIT_WIDTH = 10;
     static START_SLIT_SEPARATION = 10;
     static ON_DRAG_SLIT_WIDTH = 15;
@@ -405,7 +408,6 @@ class PointOscillator extends DraggableComponent {
     static OSCILLATE_FRAMES = 10; //must be even
     circle: Phaser.GameObjects.Ellipse;
 
-    phase: number;
     animCounter: number;
     activeText: ButtonText;
     pulseText: ButtonText;
@@ -413,14 +415,14 @@ class PointOscillator extends DraggableComponent {
     
 
     constructor(scene: Scene1,x,y) {
-        let phaseText = new ValueText(scene, PointOscillator.START_RADIUS ,0, "phase");
-        let activeText = new ButtonText(scene, PointOscillator.START_RADIUS ,HoverText.LINE_HEIGHT,"ON");
-        let pulseText = new ButtonText(scene, PointOscillator.START_RADIUS ,2*HoverText.LINE_HEIGHT,"pulse");
+        let frequencyText = new ValueText(scene, PointOscillator.START_RADIUS/2 ,0, "Frequency (Hz)");
+        let activeText = new ButtonText(scene, PointOscillator.START_RADIUS/2 ,HoverText.LINE_HEIGHT,"ON");
+        let pulseText = new ButtonText(scene, PointOscillator.START_RADIUS/2 ,2*HoverText.LINE_HEIGHT,"pulse");
         
         let circle = new Phaser.GameObjects.Ellipse(scene, 0, 0, 
             0, 0, DraggableComponent.OSCILLATOR_COLOUR);
         super(scene,x,y,  
-            [circle, phaseText, activeText, pulseText], 
+            [circle, frequencyText, activeText, pulseText], 
             circle,
             Phaser.Geom.Ellipse.Contains,
             false); //width and height
@@ -437,9 +439,8 @@ class PointOscillator extends DraggableComponent {
         this.pulseText = pulseText;
 
         //must happen after super
-        this.phase = 0;        
-        phaseText.valueSetter = function(comp) { var comp = comp; return (value)=>{comp.phase = value} }(this);
-        phaseText.valueGetter = function(comp) { var comp = comp; return ()=>{return comp.phase} }(this);
+        frequencyText.valueSetter = function(comp) { var comp = comp; return (value)=>{RippleTank.instance.setFrequency(value)} }(this);
+        frequencyText.valueGetter = function(comp) { var comp = comp; return ()=>{return RippleTank.instance.getFrequency()} }(this);
         activeText.onClick = function(comp) { var comp = comp; return ()=>{comp.toggleActive(); } }(this);
         pulseText.onClick = function(comp) { var comp = comp; return ()=>{comp.pulse(); } }(this);
      }
@@ -497,7 +498,6 @@ class LineOscillator extends DraggableComponent {
     static OSCILLATE_FRAMES = 10; //must be even
     hitRect: Phaser.GameObjects.Rectangle;
     active: boolean;
-    phase: number;
     animCounter: number;
     phaseText: ValueText;
     activeText: ButtonText;
@@ -505,13 +505,13 @@ class LineOscillator extends DraggableComponent {
     
 
     constructor(scene: Scene1,x,y) {
-        let phaseText = new ValueText(scene, LineOscillator.START_WIDTH ,0, "phase");
+        let frequencyText = new ValueText(scene, LineOscillator.START_WIDTH ,0, "Frequency");
         let activeText = new ButtonText(scene, LineOscillator.START_WIDTH ,HoverText.LINE_HEIGHT,"ON");
         let pulseText = new ButtonText(scene, LineOscillator.START_WIDTH ,2*HoverText.LINE_HEIGHT,"pulse");
         
         let hitRect = new Phaser.GameObjects.Rectangle(scene, 0, 0, 0, 0, DraggableComponent.OSCILLATOR_COLOUR);
         super(scene,x,y,  
-            [hitRect, phaseText, activeText ,pulseText], 
+            [hitRect, frequencyText, activeText ,pulseText], 
             hitRect,
             Phaser.Geom.Rectangle.Contains,
             false); //width and height
@@ -522,7 +522,7 @@ class LineOscillator extends DraggableComponent {
         this.hitRect = hitRect;
         this.hitRect.width = LineOscillator.START_WIDTH;
         this.hitRect.height =  LineOscillator.START_HEIGHT;
-        this.phaseText = phaseText;
+        this.phaseText = frequencyText;
         this.activeText = activeText;
         this.pulseText = pulseText;
 
@@ -530,9 +530,8 @@ class LineOscillator extends DraggableComponent {
         this.active = true;
 
         //must happen after super
-        this.phase = 0;        
-        phaseText.valueSetter = function(comp) { var comp = comp; return (value)=>{comp.phase = value} }(this);
-        phaseText.valueGetter = function(comp) { var comp = comp; return ()=>{return comp.phase} }(this);
+        frequencyText.valueSetter = function(comp) { var comp = comp; return (value)=>{RippleTank.instance.setFrequency(value)} }(this);
+        frequencyText.valueGetter = function(comp) { var comp = comp; return ()=>{return RippleTank.instance.getFrequency()} }(this);
         activeText.onClick = function(comp) { var comp = comp; return ()=>{comp.toggleActive(); } }(this);
         pulseText.onClick = function(comp) { var comp = comp; return ()=>{comp.pulse(); } }(this);
     }

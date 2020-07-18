@@ -56,10 +56,10 @@ export function init(width: i32,height: i32):void {
     for (let i = 1; i < RIPPLE_IMAGE_PIXEL_WIDTH - 1; i++) {
       setAbsorberType(i,j,0);
       setVelocity(i,j,0);
-      disturbPoint(i,j,0);
       setNSquared(i,j,1.0);
     }
   }
+  setBlack();
 }
 
 //next time step
@@ -339,7 +339,7 @@ export var FRICTION:f32 = 0.01;
 export var HARD_BOUNDARY:i32 = 2; //0 = FIXED, 1 = FREE, 2 = OPEN
 export var HIGH_CONTRAST:bool = false;
 export var MAX_AMPLITUDE:f32 = 1.0;
-export var COLOUR:i8 = 3; //0 = red 1 = green 2 = blue, 3 = grey
+export var COLOUR:i8 = 1; //0 = red 1 = green 2 = blue, 3 = grey
 
 
 var NUMBER:f32 = 1.3525; //for speed = 0.2
