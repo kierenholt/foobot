@@ -355,7 +355,7 @@ class DoubleSlit extends DraggableComponent {
     }
  
     clone() {
-        return new Slit(this.scene, this.x, this.y);
+        return new DoubleSlit(this.scene, this.x, this.y);
     }; 
 
     onFirstDragStart() {

@@ -43,6 +43,14 @@
                 "$tsc-watch"
             ],
             "group": "build"
+        },
+        {
+            "label": "build wasm optimised",
+            "type": "shell",
+            "command": "echo 'Ga1nsb0r0ugh' | sudo -S npm run asbuild:optimized",
+            "args": [],
+            "group": "build",
+            "problemMatcher": []
         }
     ]
 }

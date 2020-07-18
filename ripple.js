@@ -266,7 +266,7 @@ class DoubleSlit extends DraggableComponent {
         slitSeparationText.valueGetter = function (comp) { var comp = comp; return () => { return comp.slitSeparation; }; }(this);
     }
     clone() {
-        return new Slit(this.scene, this.x, this.y);
+        return new DoubleSlit(this.scene, this.x, this.y);
     }
     ;
     onFirstDragStart() {
@@ -721,16 +721,11 @@ function wasmBrowserInstantiate(wasmModuleUrl, importObject) {
                 }
             };
         }
-        if (WebAssembly.instantiateStreaming) {
-            response = yield WebAssembly.instantiateStreaming(fetch(wasmModuleUrl), importObject);
-        }
-        else {
-            const fetchAndInstantiateTask = () => __awaiter(this, void 0, void 0, function* () {
-                const wasmArrayBuffer = yield fetch(wasmModuleUrl).then(response => response.arrayBuffer());
-                return WebAssembly.instantiate(wasmArrayBuffer, importObject);
-            });
-            response = yield fetchAndInstantiateTask();
-        }
+        const fetchAndInstantiateTask = () => __awaiter(this, void 0, void 0, function* () {
+            const wasmArrayBuffer = yield fetch(wasmModuleUrl).then(response => response.arrayBuffer());
+            return WebAssembly.instantiate(wasmArrayBuffer, importObject);
+        });
+        response = yield fetchAndInstantiateTask();
         return response;
     });
 }

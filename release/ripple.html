@@ -4,13 +4,21 @@
 <head>
   <meta charset="UTF-8" />
   <title>BLUE RIPPLES - A RIPPLE TANK SIMULATOR</title>
-  <script src="phaser.js"></script>
-  <script src="ripple.js"></script>
+  <script src="phaser.min.js"></script>
+  <script src="ripple.min.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body onload="ready()">
   
+<div id="topbit"> 
+  <div style="width:100%">
+      <a href="http://www.teachometer.co.uk"><img src="http://teachometer.co.uk/icon128.png" id="logo"/></a>
+      <p id="teachometer">Teachometer<br>
+  </div>
+</div>
+
+
 <div id="gameDiv">
   <canvas id="objects"></canvas>
   <canvas id="ripples"></canvas>
@@ -47,44 +55,44 @@
       oninput="tank.setHighContrast(this.value == 1)" step="1" min="0" max="1"></input>
   
 
-      <div class="fixedHeight">
-        <img src="assets/highContrast.png" class="left" />
-        <img src="assets/lowContrast.png" class="right" />
-      </div>
-      <input class="slider" id="setMaxAmplitudeSlider" type="range"
-        oninput="tank.setMaxAmplitude(this.value)" step="0.01" min="0.01" max="1"></input>
+    <div class="fixedHeight">
+      <img src="assets/highContrast.png" class="left" />
+      <img src="assets/lowContrast.png" class="right" />
+    </div>
+    <input class="slider" id="setMaxAmplitudeSlider" type="range"
+      oninput="tank.setMaxAmplitude(this.value)" step="0.01" min="0.01" max="1"></input>
 
 
-      <div class="fixedHeight">
-        <img src="assets/red.png" class="left" />
-        <img src="assets/green.png" class="left" style="left:25px;" />
-        <img src="assets/blue.png" class="right" style="right:25px;"/>
-        <img src="assets/normal.png" class="right" />
-      </div>
-      <input class="slider" id="setColourSlider" type="range"
-        oninput="tank.setColour(this.value)" step="1" min="0" max="3"></input>
+    <div class="fixedHeight">
+      <img src="assets/red.png" class="left" />
+      <img src="assets/green.png" class="left" style="left:25px;" />
+      <img src="assets/blue.png" class="right" style="right:25px;"/>
+      <img src="assets/normal.png" class="right" />
+    </div>
+    <input class="slider" id="setColourSlider" type="range"
+      oninput="tank.setColour(this.value)" step="1" min="0" max="3"></input>
 
 
 
-      <div class="fixedHeight">
-        <p style="display:inline;font-size: 8px; margin: 0" class="left">Aa</p>
-        <p style="display:inline;font-size: 16px; margin: 0" class="right">Aa</p>
-      </div>
-      <input class="slider" id="setFontSizeSlider" type="range"
-        oninput="HoverText.setFontSize(this.value)" step="2" min="8" max="16"></input>
+    <div class="fixedHeight">
+      <p style="display:inline;font-size: 8px; margin: 0" class="left">Aa</p>
+      <p style="display:inline;font-size: 16px; margin: 0" class="right">Aa</p>
+    </div>
+    <input class="slider" id="setFontSizeSlider" type="range"
+      oninput="HoverText.setFontSize(this.value)" step="2" min="8" max="16"></input>
 
     <button onclick="tank.timeStep();"> time step</button>
     <button onclick="tank.play();"> play</button>
     <button onclick="tank.stop();"> pause</button>
   </div>
-</div> <!-- END OF GAMEDIV -->
+</div>
 
   <script>
 
     async function ready() {
 
       //wasm first
-      var wasmModule = await wasmBrowserInstantiate("/build/untouched.wasm");
+      var wasmModule = await wasmBrowserInstantiate("optimized.wasm");
       //then ripple tank
       window["tank"] = new RippleTank(document.getElementById("ripples"), wasmModule);
 
