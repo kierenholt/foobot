@@ -1,15 +1,16 @@
 (module
  (type $i32_=>_none (func (param i32)))
- (type $none_=>_none (func))
  (type $i32_i32_f32_=>_none (func (param i32 i32 f32)))
+ (type $none_=>_none (func))
  (type $i32_i32_i32_=>_none (func (param i32 i32 i32)))
- (type $i32_i32_=>_none (func (param i32 i32)))
  (type $f32_=>_none (func (param f32)))
+ (type $i32_i32_=>_none (func (param i32 i32)))
  (type $i32_i32_=>_f32 (func (param i32 i32) (result f32)))
  (type $i32_i32_=>_i32 (func (param i32 i32) (result i32)))
  (type $f64_=>_f64 (func (param f64) (result f64)))
  (type $i32_i32_i32_i32_=>_none (func (param i32 i32 i32 i32)))
  (type $i32_i32_i32_f32_=>_none (func (param i32 i32 i32 f32)))
+ (type $i32_i32_f32_f32_f32_=>_none (func (param i32 i32 f32 f32 f32)))
  (type $i32_i32_f32_f32_f32_f32_=>_none (func (param i32 i32 f32 f32 f32 f32)))
  (type $none_=>_i32 (func (result i32)))
  (type $i32_=>_i32 (func (param i32) (result i32)))
@@ -40,10 +41,8 @@
  (global $assembly/index/N_SQUARED_MEM_START (mut i32) (i32.const 0))
  (global $assembly/index/oscillatorAmplitude (mut f32) (f32.const 2))
  (global $assembly/index/oscillatorV (mut f32) (f32.const 0))
- (global $assembly/index/FRAMES_PER_SECOND (mut i32) (i32.const 25))
  (global $assembly/index/TIMESTEPS_PER_FRAME i32 (i32.const 10))
  (global $assembly/index/FREQUENCY (mut f32) (f32.const 4))
- (global $assembly/index/OMEGA2 (mut f32) (f32.const 0))
  (global $assembly/index/SPEED (mut f32) (f32.const 0.20000000298023224))
  (global $assembly/index/SPEED_SQUARED (mut f32) (f32.const 0))
  (global $assembly/index/FRICTION (mut f32) (f32.const 0.009999999776482582))
@@ -51,6 +50,8 @@
  (global $assembly/index/HIGH_CONTRAST (mut i32) (i32.const 0))
  (global $assembly/index/MAX_AMPLITUDE (mut f32) (f32.const 1))
  (global $assembly/index/COLOUR (mut i32) (i32.const 2))
+ (global $assembly/index/FRAMES_PER_SECOND (mut i32) (i32.const 0))
+ (global $assembly/index/OMEGA2 (mut f32) (f32.const 0))
  (global $~lib/math/rempio2_y0 (mut f64) (f64.const 0))
  (global $~lib/math/rempio2_y1 (mut f64) (f64.const 0))
  (global $~lib/math/res128_hi (mut i64) (i64.const 0))
@@ -78,13 +79,14 @@
  (export "disturbBall" (func $assembly/index/disturbBall))
  (export "disturbLine" (func $assembly/index/disturbLine))
  (export "setLineAbsorber" (func $assembly/index/setLineAbsorber))
+ (export "setLineReflector" (func $assembly/index/setLineReflector))
  (export "setNrectangle" (func $assembly/index/setNrectangle))
+ (export "setConvexLens" (func $assembly/index/setConvexLens))
  (export "setNSquared" (func $assembly/index/setNSquared))
  (export "setLineOscillator" (func $assembly/index/setLineOscillator))
  (export "setPointOscillator" (func $assembly/index/setPointOscillator))
  (export "resetAbsorbers" (func $assembly/index/resetAbsorbers))
  (export "resetNSquared" (func $assembly/index/resetNSquared))
- (export "FRAMES_PER_SECOND" (global $assembly/index/FRAMES_PER_SECOND))
  (export "TIMESTEPS_PER_FRAME" (global $assembly/index/TIMESTEPS_PER_FRAME))
  (export "FREQUENCY" (global $assembly/index/FREQUENCY))
  (export "setFrequency" (func $assembly/index/setFrequency))
@@ -1336,15 +1338,35 @@
   end
  )
  (func $assembly/index/setAbsorberType (param $0 i32) (param $1 i32) (param $2 i32)
-  global.get $assembly/index/ABSORBER_MEM_START
-  local.get $0
   local.get $1
+  global.get $assembly/index/RIPPLE_IMAGE_PIXEL_HEIGHT
+  i32.lt_s
+  i32.const 0
+  local.get $1
+  i32.const 0
+  i32.ge_s
+  i32.const 0
+  local.get $0
   global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
-  i32.mul
-  i32.add
-  i32.add
-  local.get $2
-  i32.store8
+  i32.lt_s
+  i32.const 0
+  local.get $0
+  i32.const 0
+  i32.ge_s
+  select
+  select
+  select
+  if
+   global.get $assembly/index/ABSORBER_MEM_START
+   local.get $0
+   local.get $1
+   global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
+   i32.mul
+   i32.add
+   i32.add
+   local.get $2
+   i32.store8
+  end
  )
  (func $assembly/index/setVelocity (param $0 i32) (param $1 i32) (param $2 f32)
   global.get $assembly/index/VELOCITY_MEM_START
@@ -1437,7 +1459,25 @@
    end
   end
  )
- (func $assembly/index/init (param $0 i32) (param $1 i32)
+ (func $assembly/index/init (param $0 i32) (param $1 i32) (param $2 i32)
+  local.get $2
+  global.set $assembly/index/FRAMES_PER_SECOND
+  f32.const 39.478355407714844
+  global.get $assembly/index/FREQUENCY
+  f32.mul
+  global.get $assembly/index/FREQUENCY
+  f32.mul
+  global.get $assembly/index/FRAMES_PER_SECOND
+  f32.convert_i32_s
+  f32.div
+  global.get $assembly/index/FRAMES_PER_SECOND
+  f32.convert_i32_s
+  f32.div
+  f32.const 10
+  f32.div
+  f32.const 10
+  f32.div
+  global.set $assembly/index/OMEGA2
   local.get $0
   global.set $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
   local.get $1
@@ -1699,10 +1739,10 @@
    local.get $1
    i32.const 1
    i32.add
-   local.tee $2
+   local.tee $4
    call $assembly/index/getPrevPosition
    local.get $0
-   local.get $2
+   local.get $4
    call $assembly/index/getVelocity
    global.get $assembly/index/SPEED
    f32.div
@@ -1722,7 +1762,14 @@
   i32.shl
   i32.add
   i32.add
+  f32.const 0
   local.get $3
+  local.get $2
+  i32.const 255
+  i32.and
+  i32.const 6
+  i32.eq
+  select
   f32.store
  )
  (func $assembly/index/getNSquared (param $0 i32) (param $1 i32) (result f32)
@@ -3470,6 +3517,77 @@
   end
   local.get $0
  )
+ (func $assembly/index/setLineReflector (param $0 i32) (param $1 i32) (param $2 f32)
+  (local $3 i32)
+  (local $4 i32)
+  (local $5 f32)
+  local.get $2
+  f64.promote_f32
+  f64.const 3.141592653589793
+  f64.mul
+  f64.const 180
+  f64.div
+  call $~lib/math/NativeMath.cos
+  f32.demote_f64
+  local.set $5
+  local.get $2
+  f64.promote_f32
+  f64.const 3.141592653589793
+  f64.mul
+  f64.const 180
+  f64.div
+  call $~lib/math/NativeMath.sin
+  f32.demote_f64
+  local.set $2
+  loop $for-loop|0
+   local.get $4
+   global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
+   i32.lt_s
+   if
+    i32.const 0
+    local.set $3
+    loop $for-loop|1
+     local.get $3
+     global.get $assembly/index/RIPPLE_IMAGE_PIXEL_HEIGHT
+     i32.lt_s
+     if
+      local.get $4
+      local.get $0
+      i32.sub
+      f32.convert_i32_s
+      local.get $5
+      f32.mul
+      local.get $3
+      local.get $1
+      i32.sub
+      f32.convert_i32_s
+      local.get $2
+      f32.mul
+      f32.add
+      f32.abs
+      f32.const 1
+      f32.lt
+      if
+       local.get $4
+       local.get $3
+       i32.const 6
+       call $assembly/index/setAbsorberType
+      end
+      local.get $3
+      i32.const 1
+      i32.add
+      local.set $3
+      br $for-loop|1
+     end
+    end
+    local.get $4
+    i32.const 1
+    i32.add
+    local.set $4
+    br $for-loop|0
+   end
+  end
+ )
  (func $assembly/index/setNrectangle (param $0 i32) (param $1 i32) (param $2 f32) (param $3 f32) (param $4 f32) (param $5 f32)
   (local $6 i32)
   (local $7 i32)
@@ -3541,11 +3659,11 @@
        local.get $4
        f32.const 1
        local.get $8
-       f32.sub
        local.get $2
        f32.const 0.5
        f32.mul
-       f32.add
+       f32.sub
+       f32.sub
        f32.mul
        local.get $4
        local.get $8
@@ -3592,11 +3710,11 @@
        local.get $4
        f32.const 1
        local.get $8
-       f32.sub
        local.get $3
        f32.const 0.5
        f32.mul
-       f32.add
+       f32.sub
+       f32.sub
        f32.mul
        local.get $4
        local.get $8
@@ -3621,6 +3739,160 @@
     i32.const 1
     i32.add
     local.set $7
+    br $for-loop|0
+   end
+  end
+ )
+ (func $assembly/index/setConvexLens (param $0 i32) (param $1 i32) (param $2 f32) (param $3 f32) (param $4 f32)
+  (local $5 f32)
+  (local $6 i32)
+  (local $7 f32)
+  (local $8 f32)
+  (local $9 f32)
+  (local $10 f32)
+  (local $11 f32)
+  local.get $0
+  f32.convert_i32_s
+  local.get $2
+  f32.const 2
+  f32.div
+  local.tee $7
+  f32.add
+  local.get $3
+  local.get $3
+  f32.mul
+  local.get $2
+  local.get $2
+  f32.mul
+  f32.add
+  f32.const 4
+  local.get $2
+  f32.mul
+  f32.div
+  local.tee $2
+  f32.sub
+  local.set $8
+  local.get $0
+  f32.convert_i32_s
+  local.get $7
+  f32.sub
+  local.get $2
+  f32.add
+  local.set $9
+  local.get $1
+  f32.convert_i32_s
+  local.set $7
+  loop $for-loop|0
+   local.get $6
+   global.get $assembly/index/RIPPLE_IMAGE_PIXEL_WIDTH
+   i32.lt_s
+   if
+    i32.const 0
+    local.set $0
+    loop $for-loop|1
+     local.get $0
+     global.get $assembly/index/RIPPLE_IMAGE_PIXEL_HEIGHT
+     i32.lt_s
+     if
+      local.get $4
+      f32.const 1
+      f32.sub
+      local.set $3
+      local.get $8
+      local.get $6
+      f32.convert_i32_s
+      local.tee $10
+      f32.sub
+      local.tee $5
+      local.get $5
+      f32.mul
+      local.get $7
+      local.get $0
+      f32.convert_i32_s
+      local.tee $11
+      f32.sub
+      local.tee $5
+      local.get $5
+      f32.mul
+      f32.add
+      f32.sqrt
+      local.tee $5
+      local.get $2
+      f32.const 1
+      f32.add
+      f32.gt
+      if (result f32)
+       f32.const 0
+      else
+       local.get $3
+       f32.const 1
+       local.get $5
+       local.get $2
+       f32.sub
+       f32.sub
+       f32.mul
+       local.get $3
+       local.get $5
+       local.get $2
+       f32.gt
+       select
+      end
+      local.set $3
+      local.get $6
+      local.get $0
+      local.get $6
+      local.get $0
+      call $assembly/index/getNSquared
+      local.get $9
+      local.get $10
+      f32.sub
+      local.tee $5
+      local.get $5
+      f32.mul
+      local.get $7
+      local.get $11
+      f32.sub
+      local.tee $5
+      local.get $5
+      f32.mul
+      f32.add
+      f32.sqrt
+      local.tee $5
+      local.get $2
+      f32.const 1
+      f32.add
+      f32.gt
+      if (result f32)
+       f32.const 0
+      else
+       local.get $3
+       f32.const 1
+       local.get $5
+       local.get $2
+       f32.sub
+       f32.sub
+       f32.mul
+       local.get $3
+       local.get $5
+       local.get $2
+       f32.gt
+       select
+      end
+      f32.const 1
+      f32.add
+      f32.mul
+      call $assembly/index/setNSquared
+      local.get $0
+      i32.const 1
+      i32.add
+      local.set $0
+      br $for-loop|1
+     end
+    end
+    local.get $6
+    i32.const 1
+    i32.add
+    local.set $6
     br $for-loop|0
    end
   end
@@ -3792,22 +4064,6 @@
   global.get $assembly/index/RIPPLE_IMAGE_PIXEL_HEIGHT
   i32.mul
   global.set $assembly/index/RIPPLE_IMAGE_NUM_PIXELS
-  f32.const 39.478355407714844
-  global.get $assembly/index/FREQUENCY
-  f32.mul
-  global.get $assembly/index/FREQUENCY
-  f32.mul
-  global.get $assembly/index/FRAMES_PER_SECOND
-  f32.convert_i32_s
-  f32.div
-  global.get $assembly/index/FRAMES_PER_SECOND
-  f32.convert_i32_s
-  f32.div
-  f32.const 10
-  f32.div
-  f32.const 10
-  f32.div
-  global.set $assembly/index/OMEGA2
   global.get $assembly/index/SPEED
   global.get $assembly/index/SPEED
   f32.mul

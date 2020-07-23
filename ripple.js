@@ -60,7 +60,9 @@ class DraggableComponent extends Phaser.GameObjects.Container {
     dragEnd(pointer, dragX, dragY) {
         this.isDragging = false;
         this.firstDragEndHasFired = true;
-        if (this.x < RippleTank.LEFT_PADDING || this.x > RippleTank.LEFT_PADDING + RippleTank.instance.canvasElement.width) {
+        let extrawidth = this.hitShape.width * Math.cos(this.angle * Math.PI / 180) / 2 - this.hitShape.height * Math.sin(this.angle * Math.PI / 180) / 2;
+        if (this.x + extrawidth < RippleTank.LEFT_PADDING ||
+            this.x + extrawidth > RippleTank.LEFT_PADDING + RippleTank.instance.canvasElement.width) {
             console.log("destroy");
             this.destroy();
         }
@@ -68,22 +70,25 @@ class DraggableComponent extends Phaser.GameObjects.Container {
     }
     pointerOut(pointer) {
         if (this.hasPermanentStroke) {
-            this.input.hitArea.setStrokeStyle(1, Phaser.Display.Color.GetColor(0, 0, 0));
+            this.hitShape.setStrokeStyle(1, this.BORDER_COLOUR);
         }
         else {
-            this.input.hitArea.setStrokeStyle();
+            this.hitShape.setStrokeStyle();
         }
         this.children.filter(ch => ch instanceof HoverText).forEach(g => g.visible = false);
     }
     pointerOver(pointer) {
-        this.input.hitArea.setStrokeStyle(1, Phaser.Display.Color.GetColor(255, 0, 0));
+        this.hitShape.setStrokeStyle(1, Phaser.Display.Color.GetColor(255, 0, 0));
         if (this.firstDragEndHasFired) {
             this.children.filter(ch => ch instanceof HoverText).forEach(g => g.visible = true);
         }
     }
+    get BORDER_COLOUR() { return 0x0; }
+    ;
 }
 DraggableComponent.ABSORBER_COLOUR = 0x888888;
 DraggableComponent.OSCILLATOR_COLOUR = 0xcccccc;
+DraggableComponent.REFLECTOR_COLOUR = 0xffffff;
 class Glass extends DraggableComponent {
     constructor(scene, x, y) {
         let ntext = new ValueText(scene, 0, 0, "n");
@@ -149,13 +154,97 @@ class Glass extends DraggableComponent {
     }
     onDestroy() { removeFromArray(Scene1.instance.refractors, this); Scene1.instance.updateRefractors(); }
     update() { Scene1.instance.updateRefractors(); }
+    get BORDER_COLOUR() { return Glass.BORDER_COLOUR; }
+    ;
 }
 Glass.BORDER_COLOUR = 0x888888;
-Glass.START_WIDTH = 50;
-Glass.START_HEIGHT = 75;
+Glass.START_WIDTH = 30;
+Glass.START_HEIGHT = 60;
 Glass.ON_DRAG_WIDTH = 200;
-Glass.ON_DRAG_HEIGHT = 300;
+Glass.ON_DRAG_HEIGHT = 400;
 Glass.START_N = 2;
+class ConvexLens extends DraggableComponent {
+    constructor(scene, x, y) {
+        let ntext = new ValueText(scene, 0, 0, "n");
+        let widthText = new ValueText(scene, 0, HoverText.LINE_HEIGHT, "width");
+        let heightText = new ValueText(scene, 0, 2 * HoverText.LINE_HEIGHT, "height");
+        let rightArc = new Phaser.GameObjects.Arc(scene, 0, 0, 0, 0, 0, false, 0x0, 0x0).setStrokeStyle(2, ConvexLens.BORDER_COLOUR);
+        let leftArc = new Phaser.GameObjects.Arc(scene, 0, 0, 0, 0, 0, true, 0x0, 0x0).setStrokeStyle(2, ConvexLens.BORDER_COLOUR);
+        let hitEllipse = new Phaser.GameObjects.Rectangle(scene, 0, 0, 0, 0, 0xffff00, 0);
+        super(scene, x, y, [hitEllipse, ntext, widthText, heightText, rightArc, leftArc], hitEllipse, Phaser.Geom.Rectangle.Contains, false);
+        this.scene.refractors.push(this);
+        this.widthText = widthText;
+        this.heightText = heightText;
+        this.hitRect = hitEllipse;
+        this.leftArc = leftArc;
+        this.rightArc = rightArc;
+        this.setDimensions(ConvexLens.START_WIDTH, ConvexLens.START_HEIGHT);
+        this.n = Glass.START_N;
+        ntext.valueSetter = function (comp) {
+            var comp = comp;
+            return (value) => { if (value < 1)
+                value = 1; comp.n = value; comp.update(); };
+        }(this);
+        ntext.valueGetter = function (comp) { var comp = comp; return () => { return comp.n; }; }(this);
+        widthText.valueSetter = function (comp) {
+            var comp = comp;
+            return (value) => {
+                comp.setDimensions(value, comp.hitRect.height);
+                comp.update();
+            };
+        }(this);
+        widthText.valueGetter = function (comp) { var comp = comp; return () => { return comp.hitRect.width; }; }(this);
+        heightText.valueSetter = function (comp) {
+            var comp = comp;
+            return (value) => {
+                comp.setDimensions(comp.hitRect.width, value);
+                comp.update();
+            };
+        }(this);
+        heightText.valueGetter = function (comp) { var comp = comp; return () => { return comp.hitRect.height; }; }(this);
+    }
+    setDimensions(width, height) {
+        this.hitRect.width = width;
+        this.hitRect.height = height;
+        let radius = (height * height + width * width) / (4 * width);
+        this.leftArc.x = width - radius;
+        this.rightArc.x = radius;
+        this.leftArc.y = height / 2;
+        this.rightArc.y = height / 2;
+        this.leftArc.radius = radius;
+        this.rightArc.radius = radius;
+        this.leftArc.startAngle = Math.asin(height / (2 * radius)) * 180 / Math.PI;
+        this.leftArc.endAngle = -1 * this.leftArc.startAngle;
+        this.rightArc.startAngle = 180 - 1 * this.leftArc.startAngle;
+        this.rightArc.endAngle = 180 + 1 * this.leftArc.startAngle;
+    }
+    clone() {
+        return new ConvexLens(this.scene, this.x, this.y);
+    }
+    ;
+    onFirstDragStart() {
+        this.setDimensions(ConvexLens.ON_DRAG_WIDTH, ConvexLens.ON_DRAG_HEIGHT);
+        this.widthText.updateValueText();
+        this.heightText.updateValueText();
+    }
+    setPixels() {
+        if (this.firstDragEndHasFired && !this.isDragging) {
+            let x = (this.x + this.hitRect.width / 2 - RippleTank.LEFT_PADDING) / RippleTank.scaleFactor;
+            let y = (this.y + this.hitRect.height / 2) / RippleTank.scaleFactor;
+            let width = (this.hitRect.width) / RippleTank.scaleFactor;
+            let height = (this.hitRect.height) / RippleTank.scaleFactor;
+            RippleTank.instance.setConvexLens(x, y, width, height, this.n * this.n);
+        }
+    }
+    onDestroy() { removeFromArray(Scene1.instance.refractors, this); Scene1.instance.updateRefractors(); }
+    update() { Scene1.instance.updateRefractors(); }
+}
+ConvexLens.BORDER_COLOUR = 0x888888;
+ConvexLens.START_WIDTH = 20;
+ConvexLens.START_HEIGHT = 60;
+ConvexLens.ON_DRAG_WIDTH = 50;
+ConvexLens.ON_DRAG_HEIGHT = 300;
+ConvexLens.START_N = 1.5;
 class Slit extends DraggableComponent {
     constructor(scene, x, y) {
         let slitWidthText = new ValueText(scene, Slit.WIDTH, 0, "slit width");
@@ -217,8 +306,8 @@ class Slit extends DraggableComponent {
     update() { Scene1.instance.updateAbsorbers(); }
 }
 Slit.WIDTH = 10;
-Slit.START_TOP_HEIGHT = 45;
-Slit.START_SLIT_WIDTH = 10;
+Slit.START_TOP_HEIGHT = 27;
+Slit.START_SLIT_WIDTH = 6;
 Slit.ON_DRAG_SLIT_WIDTH = 25;
 Slit.ON_DRAG_TOP_HEIGHT = 1000;
 class DoubleSlit extends DraggableComponent {
@@ -274,21 +363,22 @@ class DoubleSlit extends DraggableComponent {
         this.bottomRect.height = DoubleSlit.ON_DRAG_TOP_HEIGHT;
         this.setSlitWidth(DoubleSlit.ON_DRAG_SLIT_WIDTH);
         this.setSlitSeparation(DoubleSlit.ON_DRAG_SLIT_SEPARATION);
-        this.slitWidthText.y = DoubleSlit.ON_DRAG_TOP_HEIGHT;
-        this.slitSeparationText.y = DoubleSlit.ON_DRAG_TOP_HEIGHT + HoverText.LINE_HEIGHT;
+        this.slitWidthText.y = Math.floor(this.hitRect.height / 2);
+        this.slitSeparationText.y = Math.floor(this.hitRect.height / 2) + HoverText.LINE_HEIGHT;
     }
     setSlitWidth(w) {
         console.log(w);
-        this.hitRect.height = 2 * DoubleSlit.ON_DRAG_TOP_HEIGHT + 2 * w + this.slitSeparation;
+        this.hitRect.height = 2 * DoubleSlit.ON_DRAG_TOP_HEIGHT + w + this.slitSeparation;
         this.middleRect.y = DoubleSlit.ON_DRAG_TOP_HEIGHT + w;
-        this.bottomRect.y = DoubleSlit.ON_DRAG_TOP_HEIGHT + 2 * w + this.slitSeparation;
+        this.middleRect.height = this.slitSeparation - w;
+        this.bottomRect.y = DoubleSlit.ON_DRAG_TOP_HEIGHT + w + this.slitSeparation;
         this.slitWidth = w;
         this.slitWidthText.updateValueText();
     }
     setSlitSeparation(s) {
-        this.hitRect.height = 2 * DoubleSlit.ON_DRAG_TOP_HEIGHT + 2 * this.slitWidth + s;
-        this.middleRect.height = s;
-        this.bottomRect.y = DoubleSlit.ON_DRAG_TOP_HEIGHT + 2 * this.slitWidth + s;
+        this.middleRect.height = s - this.slitWidth;
+        this.hitRect.height = 2 * DoubleSlit.ON_DRAG_TOP_HEIGHT + this.slitWidth + s;
+        this.bottomRect.y = DoubleSlit.ON_DRAG_TOP_HEIGHT + this.slitWidth + s;
         this.slitSeparation = s;
         this.slitSeparationText.updateValueText();
     }
@@ -296,11 +386,11 @@ class DoubleSlit extends DraggableComponent {
         if (this.firstDragEndHasFired && !this.isDragging) {
             let x = (this.x - RippleTank.LEFT_PADDING) / RippleTank.scaleFactor + 1;
             let y0 = (this.y) / RippleTank.scaleFactor;
-            let y1 = (this.y + Slit.ON_DRAG_TOP_HEIGHT) / RippleTank.scaleFactor;
-            let y2 = (this.y + Slit.ON_DRAG_TOP_HEIGHT + this.slitWidth) / RippleTank.scaleFactor;
-            let y3 = (this.y + Slit.ON_DRAG_TOP_HEIGHT + this.slitWidth + this.slitSeparation) / RippleTank.scaleFactor;
-            let y4 = (this.y + Slit.ON_DRAG_TOP_HEIGHT + 2 * this.slitWidth + this.slitSeparation) / RippleTank.scaleFactor;
-            let y5 = (this.y + 2 * Slit.ON_DRAG_TOP_HEIGHT + 2 * this.slitWidth + this.slitSeparation) / RippleTank.scaleFactor;
+            let y1 = (this.y + this.topRect.height) / RippleTank.scaleFactor;
+            let y2 = (this.y + this.middleRect.y) / RippleTank.scaleFactor;
+            let y3 = (this.y + this.middleRect.y + this.middleRect.height) / RippleTank.scaleFactor;
+            let y4 = (this.y + this.bottomRect.y) / RippleTank.scaleFactor;
+            let y5 = (this.y + this.bottomRect.y + this.bottomRect.height) / RippleTank.scaleFactor;
             RippleTank.instance.setLineAbsorber(x, y0, y1);
             RippleTank.instance.setLineAbsorber(x, y2, y3);
             RippleTank.instance.setLineAbsorber(x, y4, y5);
@@ -310,12 +400,104 @@ class DoubleSlit extends DraggableComponent {
     update() { Scene1.instance.updateAbsorbers(); }
 }
 DoubleSlit.WIDTH = 10;
-DoubleSlit.START_TOP_HEIGHT = 35;
-DoubleSlit.START_SLIT_WIDTH = 10;
-DoubleSlit.START_SLIT_SEPARATION = 10;
+DoubleSlit.START_TOP_HEIGHT = 18;
+DoubleSlit.START_SLIT_WIDTH = 6;
+DoubleSlit.START_SLIT_SEPARATION = 12;
 DoubleSlit.ON_DRAG_SLIT_WIDTH = 15;
 DoubleSlit.ON_DRAG_SLIT_SEPARATION = 60;
 DoubleSlit.ON_DRAG_TOP_HEIGHT = 1000;
+class Grating extends DraggableComponent {
+    constructor(scene, x, y) {
+        let slitWidthText = new ValueText(scene, Grating.WIDTH, 0, "slit width");
+        let slitSeparationText = new ValueText(scene, Grating.WIDTH, HoverText.LINE_HEIGHT, "slit sep.");
+        let hitRect = new Phaser.GameObjects.Rectangle(scene, 0, 0, 0, 0, DraggableComponent.ABSORBER_COLOUR, 0);
+        let rects = [];
+        for (let y = 0; y < Grating.NUM_RECTANGLES; y++) {
+            rects.push(new Phaser.GameObjects.Rectangle(scene, 0, y * (Grating.START_SLIT_SEPARATION + Grating.START_SLIT_WIDTH), 0, 0, DraggableComponent.ABSORBER_COLOUR));
+        }
+        super(scene, x, y, rects.concat([hitRect, slitWidthText, slitSeparationText]), hitRect, Phaser.Geom.Rectangle.Contains, false);
+        this.scene.absorbers.push(this);
+        this.slitWidthText = slitWidthText;
+        this.slitSeparationText = slitSeparationText;
+        this.rects = rects;
+        this.rects.forEach((r) => {
+            r.width = Grating.WIDTH;
+            r.height = Grating.START_SLIT_SEPARATION;
+            if (r.y > Grating.START_FULL_HEIGHT)
+                r.visible = false;
+        });
+        this.hitRect = hitRect;
+        this.hitRect.width = Grating.WIDTH;
+        this.hitRect.height = Grating.START_FULL_HEIGHT;
+        this.slitWidth = Grating.START_SLIT_WIDTH;
+        this.slitSeparation = Grating.START_SLIT_SEPARATION;
+        slitWidthText.valueSetter = function (comp) {
+            var comp = comp;
+            return (value) => {
+                comp.setSlitWidth(value);
+                comp.update();
+            };
+        }(this);
+        slitWidthText.valueGetter = function (comp) { var comp = comp; return () => { return comp.slitWidth; }; }(this);
+        slitSeparationText.valueSetter = function (comp) {
+            var comp = comp;
+            return (value) => {
+                comp.setSlitSeparation(value);
+                comp.update();
+            };
+        }(this);
+        slitSeparationText.valueGetter = function (comp) { var comp = comp; return () => { return comp.slitSeparation; }; }(this);
+    }
+    clone() {
+        return new Grating(this.scene, this.x, this.y);
+    }
+    ;
+    onFirstDragStart() {
+        this.hitRect.height = Grating.ON_DRAG_FULL_HEIGHT;
+        this.rects.forEach(r => r.visible = true);
+        this.setSlitWidth(Grating.ON_DRAG_SLIT_WIDTH);
+        this.setSlitSeparation(Grating.ON_DRAG_SLIT_SEPARATION);
+        this.slitWidthText.y = Math.floor(0.5 * Grating.ON_DRAG_FULL_HEIGHT);
+        this.slitSeparationText.y = Math.floor(0.5 * Grating.ON_DRAG_FULL_HEIGHT + HoverText.LINE_HEIGHT);
+    }
+    setSlitWidth(w) {
+        console.log(w);
+        this.slitWidth = w;
+        for (let i = 0; i < Grating.NUM_RECTANGLES; i++) {
+            this.rects[i].y = i * (this.slitWidth + this.slitSeparation);
+        }
+        this.slitWidthText.updateValueText();
+    }
+    setSlitSeparation(s) {
+        this.slitSeparation = s;
+        for (let i = 0; i < Grating.NUM_RECTANGLES; i++) {
+            this.rects[i].y = i * (this.slitWidth + this.slitSeparation);
+            this.rects[i].height = this.slitSeparation;
+        }
+        this.slitSeparationText.updateValueText();
+    }
+    setPixels() {
+        if (this.firstDragEndHasFired && !this.isDragging) {
+            let x = (this.x - RippleTank.LEFT_PADDING) / RippleTank.scaleFactor + 1;
+            for (let i = 0; i < Grating.NUM_RECTANGLES; i++) {
+                let y0 = (this.y + this.rects[i].y) / RippleTank.scaleFactor;
+                let y1 = (this.y + this.rects[i].y + this.slitSeparation) / RippleTank.scaleFactor;
+                if (y0 < RippleTank.GRID_HEIGHT && y1 > 0)
+                    RippleTank.instance.setLineAbsorber(x, y0, y1);
+            }
+        }
+    }
+    onDestroy() { removeFromArray(Scene1.instance.absorbers, this); Scene1.instance.updateAbsorbers(); }
+    update() { Scene1.instance.updateAbsorbers(); }
+}
+Grating.WIDTH = 10;
+Grating.START_SLIT_WIDTH = 5;
+Grating.START_SLIT_SEPARATION = 5;
+Grating.START_FULL_HEIGHT = 60;
+Grating.ON_DRAG_SLIT_WIDTH = 15;
+Grating.ON_DRAG_SLIT_SEPARATION = 40;
+Grating.ON_DRAG_FULL_HEIGHT = 2000;
+Grating.NUM_RECTANGLES = 200;
 class PointOscillator extends DraggableComponent {
     constructor(scene, x, y) {
         let frequencyText = new ValueText(scene, PointOscillator.START_RADIUS / 2, 0, "Frequency (Hz)");
@@ -415,9 +597,9 @@ class LineOscillator extends DraggableComponent {
     onFirstDragStart() {
         this.hitRect.height = LineOscillator.ON_DRAG_HEIGHT;
         this.hitRect.y = 0;
-        this.phaseText.y = LineOscillator.ON_DRAG_HEIGHT / 2;
-        this.activeText.y = LineOscillator.ON_DRAG_HEIGHT / 2 + HoverText.LINE_HEIGHT;
-        this.pulseText.y = LineOscillator.ON_DRAG_HEIGHT / 2 + 2 * HoverText.LINE_HEIGHT;
+        this.phaseText.y = Math.floor(LineOscillator.ON_DRAG_HEIGHT / 2);
+        this.activeText.y = Math.floor(LineOscillator.ON_DRAG_HEIGHT / 2 + HoverText.LINE_HEIGHT);
+        this.pulseText.y = Math.floor(LineOscillator.ON_DRAG_HEIGHT / 2 + 2 * HoverText.LINE_HEIGHT);
     }
     updateFrame() {
         if (this.active) {
@@ -442,10 +624,50 @@ class LineOscillator extends DraggableComponent {
     }
     update() { Scene1.instance.updateAbsorbers(); }
 }
-LineOscillator.START_HEIGHT = 50;
+LineOscillator.START_HEIGHT = 60;
 LineOscillator.START_WIDTH = 10;
 LineOscillator.ON_DRAG_HEIGHT = 1000;
 LineOscillator.OSCILLATE_FRAMES = 10;
+class LineReflector extends DraggableComponent {
+    constructor(scene, x, y) {
+        let angleText = new ValueText(scene, LineReflector.START_WIDTH, 0, "angle");
+        let hitRect = new Phaser.GameObjects.Rectangle(scene, 0, 0, 0, 0, DraggableComponent.REFLECTOR_COLOUR).setStrokeStyle(1, 0);
+        super(scene, x, y, [hitRect, angleText], hitRect, Phaser.Geom.Rectangle.Contains, true);
+        this.scene.absorbers.push(this);
+        this.hitRect = hitRect;
+        this.hitRect.width = LineReflector.START_WIDTH;
+        this.hitRect.height = LineReflector.START_HEIGHT;
+        this.angleText = angleText;
+        angleText.valueSetter = function (comp) {
+            var comp = comp;
+            return (value) => { comp.angle = value; comp.update(); };
+        }(this);
+        angleText.valueGetter = function (comp) { var comp = comp; return () => { return comp.angle; }; }(this);
+    }
+    clone() {
+        return new LineReflector(this.scene, this.x, this.y);
+    }
+    ;
+    onFirstDragStart() {
+        this.hitRect.height = LineReflector.ON_DRAG_HEIGHT;
+        this.angleText.y = Math.floor(LineReflector.ON_DRAG_HEIGHT / 2);
+    }
+    setPixels() {
+        if (this.firstDragEndHasFired && !this.isDragging) {
+            let x = (this.x - RippleTank.LEFT_PADDING + LineReflector.START_WIDTH / 2) / RippleTank.scaleFactor;
+            let y = (this.y) / RippleTank.scaleFactor;
+            RippleTank.instance.setLineReflector(x, y, this.angle);
+        }
+    }
+    onDestroy() {
+        removeFromArray(Scene1.instance.absorbers, this);
+        Scene1.instance.updateAbsorbers();
+    }
+    update() { console.log(this.x, this.y); Scene1.instance.updateAbsorbers(); }
+}
+LineReflector.START_HEIGHT = 60;
+LineReflector.START_WIDTH = 10;
+LineReflector.ON_DRAG_HEIGHT = 1000;
 class myGame extends Phaser.Game {
     constructor() {
         let config = {
@@ -557,7 +779,7 @@ class RippleTank {
         this.canvasElement = canvasElement;
         RippleTank.GRID_WIDTH = Math.floor(window.innerWidth - RippleTank.LEFT_PADDING - RippleTank.RIGHT_PADDING) / RippleTank.scaleFactor;
         RippleTank.GRID_HEIGHT = Math.floor(window.innerHeight / RippleTank.scaleFactor);
-        this.wasmModule.instance.exports.init(RippleTank.GRID_WIDTH, RippleTank.GRID_HEIGHT);
+        this.wasmModule.instance.exports.init(RippleTank.GRID_WIDTH, RippleTank.GRID_HEIGHT, RippleTank.FRAMES_PER_SECOND);
         this.canvasElement.width = RippleTank.scaleFactor * RippleTank.GRID_WIDTH;
         this.canvasElement.height = RippleTank.scaleFactor * RippleTank.GRID_HEIGHT;
         this.canvasContext = canvasElement.getContext("2d");
@@ -582,13 +804,15 @@ class RippleTank {
         this.canvasContext.drawImage(this.canvasElement, 0, 0);
     }
     timeStep() {
+        if (CountUpTimer.instance)
+            CountUpTimer.instance.timestep();
         this.wasmModule.instance.exports.timeStep();
         this.copyMemoryToCanvas();
     }
     play() {
         if (!this.playing) {
             this.playing = true;
-            this.timer = setInterval(this.timeStep.bind(this), 1000 / this.wasmModule.instance.exports.FRAMES_PER_SECOND.valueOf());
+            this.timer = setInterval(this.timeStep.bind(this), 1000 / RippleTank.FRAMES_PER_SECOND);
         }
     }
     stop() {
@@ -631,8 +855,24 @@ class RippleTank {
         if (RippleTank.DEBUG)
             this.copyMemoryToCanvas();
     }
+    setConvexLens(x, y, width, height, nsquared) {
+        this.wasmModule.instance.exports.setConvexLens(Math.round(x), Math.round(y), width, height, nsquared);
+        if (RippleTank.DEBUG)
+            this.copyMemoryToCanvas();
+    }
+    setLineReflector(x, y, angle) {
+        this.wasmModule.instance.exports.setLineReflector(Math.round(x), Math.round(y), angle);
+        if (RippleTank.DEBUG)
+            this.copyMemoryToCanvas();
+    }
     resetAbsorbers() { this.wasmModule.instance.exports.resetAbsorbers(); }
     resetNSquared() { this.wasmModule.instance.exports.resetNSquared(); }
+    reset() {
+        Scene1.instance.absorbers.filter(r => r.firstDragEndHasFired).forEach(e => e.destroy());
+        Scene1.instance.refractors.filter(r => r.firstDragEndHasFired).forEach(e => e.destroy());
+        if (CountUpTimer.instance)
+            CountUpTimer.instance.reset();
+    }
     setFrequency(value) {
         if (value > 10) {
             value = 10;
@@ -658,7 +898,67 @@ RippleTank.DEBUG = false;
 RippleTank.GRID_WIDTH = 80;
 RippleTank.GRID_HEIGHT = 100;
 RippleTank.LEFT_PADDING = 100;
-RippleTank.RIGHT_PADDING = 100;
+RippleTank.RIGHT_PADDING = 110;
+RippleTank.FRAMES_PER_SECOND = 25;
+class Ruler extends Phaser.GameObjects.Container {
+    constructor(scene, x, y, isHorizontal) {
+        let image = new Phaser.GameObjects.Image(scene, 0, 0, isHorizontal ? "rulerH90" : "rulerV90");
+        let borderRect = new Phaser.GameObjects.Rectangle(scene, 0, 0, 0, 0).setVisible(false).setStrokeStyle(1, 0xff0000);
+        super(scene, x, y, [image, borderRect]);
+        this.scene.add.existing(this);
+        this.setInteractive(borderRect, Phaser.Geom.Rectangle.Contains);
+        this.scene.input.setDraggable(this);
+        this.isHorizontal = isHorizontal;
+        this.on('drag', this.onDrag);
+        this.on('dragend', this.dragEnd);
+        this.on("pointerover", this.pointerOver);
+        this.on("pointerout", this.pointerOut);
+        this.borderRect = borderRect;
+        this.image = image;
+        this.borderRect.x = -1 * this.image.width / 2;
+        this.borderRect.y = -1 * this.image.height / 2;
+        this.borderRect.width = this.image.width;
+        this.borderRect.height = this.image.height;
+    }
+    onDrag(pointer, dragX, dragY) {
+        if (!this.onDragHasFired) {
+            this.clone();
+            let prevHeight = this.image.height;
+            this.image.setTexture(this.isHorizontal ? "rulerH1000" : "rulerV1000");
+            this.borderRect.width = this.image.width;
+            this.borderRect.height = this.image.height;
+            this.borderRect.x = -this.image.width / 2;
+            this.borderRect.y = -this.image.height / 2;
+            this.onDragHasFired = true;
+        }
+        if (this.firstDragEndHasFired) {
+            this.x = dragX;
+            this.y = dragY;
+        }
+        else {
+            this.x = dragX + this.image.width / 2;
+            this.y = dragY + this.image.height / 2;
+        }
+    }
+    dragEnd(pointer, dragX, dragY) {
+        this.firstDragEndHasFired = true;
+        if (this.x - this.image.width / 2 < RippleTank.LEFT_PADDING ||
+            this.x - this.image.width / 2 > RippleTank.LEFT_PADDING + RippleTank.instance.canvasElement.width) {
+            console.log("destroy");
+            this.destroy();
+        }
+    }
+    pointerOut(pointer) {
+        this.borderRect.setVisible(false);
+    }
+    pointerOver(pointer) {
+        this.borderRect.setVisible(true);
+    }
+    clone() {
+        return new Ruler(this.scene, this.x, this.y, this.isHorizontal);
+    }
+    ;
+}
 const SPAWN_X = 25;
 var SPAWN_Y = 25;
 const SPAWN_VERTICAL_SPACING = 50;
@@ -680,15 +980,24 @@ class Scene1 extends Phaser.Scene {
         Scene1.instance = this;
     }
     preload() {
+        this.load.image("rulerH90", "assets/rulerHorizontal90.resized.png");
+        this.load.image("rulerH1000", "assets/rulerHorizontal1000.png");
+        this.load.image("rulerV90", "assets/rulerVertical90.resized.png");
+        this.load.image("rulerV1000", "assets/rulerVertical1000.png");
     }
     create() {
         this.tankRectangle = new Phaser.GameObjects.Rectangle(this, RippleTank.LEFT_PADDING + RippleTank.instance.imageWidth / 2, RippleTank.instance.imageHeight / 2, RippleTank.instance.imageWidth, RippleTank.instance.imageHeight).setStrokeStyle(1, 0x0);
         this.add.existing(this.tankRectangle);
-        new Glass(this, 22, 24);
-        new PointOscillator(this, 22, 150);
-        new LineOscillator(this, 70, 125);
-        new Slit(this, 22, 200);
-        new DoubleSlit(this, 70, 200);
+        new Glass(this, 15, 24);
+        new ConvexLens(this, 65, 24);
+        new PointOscillator(this, 27, 130);
+        new LineOscillator(this, 70, 100);
+        new Slit(this, 22, 180);
+        new DoubleSlit(this, 70, 180);
+        new Grating(this, 22, 260);
+        new LineReflector(this, 70, 260);
+        new Ruler(this, 27, 375, false);
+        new Ruler(this, 70, 375, true);
     }
     update() {
         this.updateFunctions.forEach(f => f());
@@ -700,6 +1009,46 @@ class Scene1 extends Phaser.Scene {
     updateAbsorbers() {
         RippleTank.instance.resetAbsorbers();
         this.absorbers.forEach(r => r.setPixels());
+    }
+}
+class CountUpTimer {
+    constructor(span) {
+        CountUpTimer.instance = this;
+        this.span = span;
+        this.msElapsed = 0;
+        this.span.innerHTML = this.timerText;
+    }
+    timestep() {
+        this.msElapsed += 1000 / RippleTank.FRAMES_PER_SECOND;
+        this.span.innerHTML = this.timerText;
+    }
+    get timerText() {
+        let ms = this.msElapsed;
+        var hours = Math.floor(ms / 3600000);
+        var hoursString = hours.toString();
+        ms -= hours * 3600000;
+        var minutes = Math.floor(ms / 60000) % 60;
+        var minutesString = minutes.toString();
+        ms -= minutes * 60000;
+        var seconds = Math.floor(ms / 1000) % 60;
+        var secondsString = seconds.toString();
+        ms -= seconds * 1000;
+        ms = Math.floor(ms);
+        var msString = ms.toString();
+        return (hours ? this.padLeftZeroes(hoursString, 1) + "h" : "") +
+            this.padLeftZeroes(minutesString, 2) + "m" +
+            this.padLeftZeroes(secondsString, 2) + "s" +
+            this.padLeftZeroes(msString, 3) + "ms";
+    }
+    padLeftZeroes(str, num) {
+        while (str.length < num) {
+            str = "0" + str;
+        }
+        return str;
+    }
+    reset() {
+        this.msElapsed = 0;
+        this.span.innerHTML = this.timerText;
     }
 }
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {

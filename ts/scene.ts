@@ -3,7 +3,7 @@ var SPAWN_Y = 25;
 const SPAWN_VERTICAL_SPACING = 50;
 
 class Scene1 extends Phaser.Scene {
-    refractors: Glass[] = [];
+    refractors: any[] = [];
     absorbers: any = [];
     updateFunctions: any = [];
     tankRectangle: Phaser.GameObjects.Rectangle;
@@ -26,6 +26,11 @@ class Scene1 extends Phaser.Scene {
     }
 
     preload () {
+        this.load.image("rulerH90","assets/rulerHorizontal90.resized.png");
+        this.load.image("rulerH1000","assets/rulerHorizontal1000.png");
+        this.load.image("rulerV90","assets/rulerVertical90.resized.png");
+        this.load.image("rulerV1000","assets/rulerVertical1000.png");
+
     }
     
     create () {
@@ -36,11 +41,20 @@ class Scene1 extends Phaser.Scene {
             RippleTank.instance.imageWidth, RippleTank.instance.imageHeight).setStrokeStyle(1,0x0);
         this.add.existing(this.tankRectangle);
 
-        new Glass(this,22,24);
-        new PointOscillator(this, 22, 150);
-        new LineOscillator(this, 70, 125);
-        new Slit(this, 22, 200);
-        new DoubleSlit(this, 70, 200);
+        new Glass(this,15,24);
+        new ConvexLens(this, 65, 24);
+
+        new PointOscillator(this, 27, 130);
+        new LineOscillator(this, 70, 100);
+
+        new Slit(this, 22, 180);
+        new DoubleSlit(this, 70, 180);
+        
+        new Grating(this, 22, 260);
+        new LineReflector(this, 70, 260);
+
+        new Ruler(this, 27, 375, false); 
+        new Ruler(this, 70, 375, true); 
     }
 
     update () {

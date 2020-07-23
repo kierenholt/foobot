@@ -18,7 +18,11 @@ export var VELOCITY_MEM_START: i32;
 export var ABSORBER_MEM_START: i32;
 export var N_SQUARED_MEM_START: i32;
 
-export function init(width: i32,height: i32):void {
+export function init(width: i32,height: i32, framesPerSecond: i32):void {
+
+  FRAMES_PER_SECOND = framesPerSecond; 
+  OMEGA2 = 4*3.14159*3.14159*FREQUENCY*FREQUENCY/<f32>FRAMES_PER_SECOND/<f32>FRAMES_PER_SECOND/<f32>TIMESTEPS_PER_FRAME/<f32>TIMESTEPS_PER_FRAME;
+
   RIPPLE_IMAGE_PIXEL_WIDTH = width;
   RIPPLE_IMAGE_PIXEL_HEIGHT = height;
   RIPPLE_IMAGE_NUM_PIXELS = RIPPLE_IMAGE_PIXEL_WIDTH * RIPPLE_IMAGE_PIXEL_HEIGHT;
@@ -209,18 +213,31 @@ export function disturbLine(x:i32, r: i32, amplitude:f32): void {
   }
 }
 
-//ABSORBERS
+//ABSORBERS AND REFLECTORS
     //0 no absorber
     //1 left side
     //2 top side
     //3 right side
     //4 bottom side
     //5 oscillator in phase
+    //6 fixed to zero amplitude
 
 export function setLineAbsorber(x:i32,y1:i32,y2:i32) : void {
   for (let j:i32 = max(y1,0); j <= min(y2,RIPPLE_IMAGE_PIXEL_HEIGHT-1); j++) {
     setAbsorberType(x-1,j,1);
     setAbsorberType(x,j,3);
+  }
+}
+
+
+export function setLineReflector(x:i32,y:i32,angle: f32):void {
+  let qx:f32 = <f32>Math.cos(angle * Math.PI / 180);
+  let qy:f32 = <f32>Math.sin(angle * Math.PI / 180);
+  for (let i:i32 = 0; i < RIPPLE_IMAGE_PIXEL_WIDTH; i++) {
+    for (let j:i32 = 0; j < RIPPLE_IMAGE_PIXEL_HEIGHT; j++) {
+      let widthDist:f32 = abs(<f32>(i-x)*qx + <f32>(j-y)*qy); //assume width = 1
+      if (widthDist < 1) setAbsorberType(i,j,6);
+    }
   }
 }
 
@@ -230,13 +247,16 @@ function updateAbsorberPosition(x:i32, y:i32, t:i8):void {
   if (t == 2) pos = getPrevPosition(x,y-1) - getVelocity(x,y-1)/SPEED/NUMBER;
   if (t == 3) pos = getPrevPosition(x+1,y) - getVelocity(x+1,y)/SPEED/NUMBER;
   if (t == 4) pos = getPrevPosition(x,y+1) - getVelocity(x,y+1)/SPEED/NUMBER;
+  if (t == 6) pos = 0;
   store<f32>(x*4 + y*RIPPLE_IMAGE_PIXEL_WIDTH*4 + currentPositionMemStart, pos); //store position
 }
 function getAbsorberType(x:i32,y:i32):i8 {
   return load<i8>(x + y*RIPPLE_IMAGE_PIXEL_WIDTH + ABSORBER_MEM_START);
 }
 function setAbsorberType(x:i32,y:i32,value:i8):void {
-  store<i8>(x + y*RIPPLE_IMAGE_PIXEL_WIDTH + ABSORBER_MEM_START,value); //i8
+  if (x >= 0 && x< RIPPLE_IMAGE_PIXEL_WIDTH && y >= 0 && y < RIPPLE_IMAGE_PIXEL_HEIGHT) {
+    store<i8>(x + y*RIPPLE_IMAGE_PIXEL_WIDTH + ABSORBER_MEM_START,value); //i8
+  }
   //DEBUG - SETS GREEN COLOUR
   //green(x,y,value);
 }
@@ -261,16 +281,44 @@ export function setNrectangle(x:i32,y:i32,width:f32,height:f32,angle:f32,nsquare
       //width
       let widthDist:f32 = abs(<f32>(i-x)*qx + <f32>(j-y)*qy - 0.5*width);
       if (widthDist > width * 0.5 + 1) nsq = 0;
-      else if (widthDist > width * 0.5) nsq *= (1 - widthDist + width*0.5); //fractional part 0 to 1
+      else if (widthDist > width * 0.5) nsq *= (1 - (widthDist - width*0.5)); //fractional part 0 to 1
       //height 
       let heightDist:f32 = abs(<f32>(i-x)*qy - <f32>(j-y)*qx + 0.5*height);
       if (heightDist > height * 0.5 + 1) nsq = 0;
-      else if (heightDist > height * 0.5) nsq *= (1 - heightDist + height*0.5); //fractional part
+      else if (heightDist > height * 0.5) nsq *= (1 - (heightDist - height*0.5)); //fractional part
       
       let newValue = getNSquared(i,j)*(nsq+1);
       setNSquared(i,j,newValue);
       //DEBUG ONLY
       //green(i,j,newValue-1);
+    }
+  }
+}
+
+export function setConvexLens(x:i32,y:i32,width:f32,height:f32,nsquared:f32):void {
+  let radius:f32 = (height*height + width*width)/(4*width);
+  let leftX:f32 = <f32>x + width/2 - radius;
+  let rightX:f32 = <f32>x - width/2 + radius;
+  let Y:f32 = <f32>y;
+  
+  for (let i:i32 = 0; i < RIPPLE_IMAGE_PIXEL_WIDTH; i++) {
+    for (let j:i32 = 0; j < RIPPLE_IMAGE_PIXEL_HEIGHT; j++) {
+      let I:f32 = <f32>i;
+      let J:f32 = <f32>j;
+      let nsq = nsquared-1;
+      let leftR:f32 = <f32>sqrt((leftX-I)*(leftX-I) + (Y-J)*(Y-J));
+      if (leftR > radius + 1) nsq = 0;
+      else if (leftR > radius) nsq *= (1 - (leftR - radius));
+      
+      let rightR:f32 = <f32>sqrt((rightX-I)*(rightX-I) + (Y-J)*(Y-J));
+      if (rightR > radius + 1) nsq = 0;
+      else if (rightR > radius) nsq *= (1 - (rightR - radius));
+
+      let newValue = getNSquared(i,j)*(nsq+1);
+      setNSquared(i,j,newValue);
+      //DEBUG ONLY
+      //green(i,j,newValue - 1);
+      
     }
   }
 }
@@ -321,10 +369,8 @@ export function resetNSquared():void {
 }
 
 //SETTINGS 
-export var FRAMES_PER_SECOND:i32 = 25;
 export const TIMESTEPS_PER_FRAME:i32 = 10;
 export var FREQUENCY:f32 = 4;
-var OMEGA2:f32 = 4*3.14159*3.14159*FREQUENCY*FREQUENCY/<f32>FRAMES_PER_SECOND/<f32>FRAMES_PER_SECOND/<f32>TIMESTEPS_PER_FRAME/<f32>TIMESTEPS_PER_FRAME;
 
 export function setFrequency(value:f32):void { FREQUENCY = value; OMEGA2 = 4*3.14159*3.14159*FREQUENCY*FREQUENCY/<f32>FRAMES_PER_SECOND/<f32>FRAMES_PER_SECOND/<f32>TIMESTEPS_PER_FRAME/<f32>TIMESTEPS_PER_FRAME }
 export function setSpeed(value:f32):void { SPEED = value; SPEED_SQUARED = value*value; }
@@ -341,8 +387,9 @@ export var HIGH_CONTRAST:bool = false;
 export var MAX_AMPLITUDE:f32 = 1.0;
 export var COLOUR:i8 = 2; //0 = red 1 = green 2 = blue, 3 = grey
 
-
+var FRAMES_PER_SECOND: i32;
 var NUMBER:f32 = 1.3525; //for speed = 0.2
+var OMEGA2:f32;
 
     //1.2 inverted
     //1.3 inverted?

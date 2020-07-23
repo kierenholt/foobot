@@ -11,7 +11,9 @@ class RippleTank {
     static GRID_HEIGHT = 100;
 
     static LEFT_PADDING = 100;
-    static RIGHT_PADDING = 100;
+    static RIGHT_PADDING = 110;
+
+    static FRAMES_PER_SECOND = 25;
 
     constructor(canvasElement, wasmModule) {
         //https://wasmbyexample.dev/examples/reading-and-writing-graphics/reading-and-writing-graphics.assemblyscript.en-us.html
@@ -23,7 +25,7 @@ class RippleTank {
         RippleTank.GRID_WIDTH = Math.floor(window.innerWidth - RippleTank.LEFT_PADDING - RippleTank.RIGHT_PADDING)/RippleTank.scaleFactor;
         RippleTank.GRID_HEIGHT = Math.floor(window.innerHeight/RippleTank.scaleFactor);
 
-        this.wasmModule.instance.exports.init(RippleTank.GRID_WIDTH, RippleTank.GRID_HEIGHT);
+        this.wasmModule.instance.exports.init(RippleTank.GRID_WIDTH, RippleTank.GRID_HEIGHT, RippleTank.FRAMES_PER_SECOND);
 
         this.canvasElement.width = RippleTank.scaleFactor * RippleTank.GRID_WIDTH;
         this.canvasElement.height = RippleTank.scaleFactor * RippleTank.GRID_HEIGHT;
@@ -69,6 +71,7 @@ class RippleTank {
 
     timeStep() {
         //this.randomPulse();
+        if (CountUpTimer.instance) CountUpTimer.instance.timestep();
         this.wasmModule.instance.exports.timeStep();
         this.copyMemoryToCanvas();
     }
@@ -78,7 +81,7 @@ class RippleTank {
             this.playing = true;
             this.timer = setInterval(
                 this.timeStep.bind(this), 
-                1000 / this.wasmModule.instance.exports.FRAMES_PER_SECOND.valueOf());
+                1000 / RippleTank.FRAMES_PER_SECOND);
         }
     }
 
@@ -132,10 +135,27 @@ class RippleTank {
         //DEBUG ONLY 
         if (RippleTank.DEBUG) this.copyMemoryToCanvas();
     }
+    setConvexLens(x, y, width, height, nsquared) {
+        this.wasmModule.instance.exports.setConvexLens(Math.round(x), Math.round(y), width, height , nsquared);
+        //DEBUG ONLY 
+        if (RippleTank.DEBUG) this.copyMemoryToCanvas();
+    }
+
+//REFLECTOR
+    setLineReflector(x,y,angle) {
+        this.wasmModule.instance.exports.setLineReflector(Math.round(x), Math.round(y),  angle);
+        //DEBUG ONLY 
+        if (RippleTank.DEBUG) this.copyMemoryToCanvas();
+    }
 
 //RESET
     resetAbsorbers() { this.wasmModule.instance.exports.resetAbsorbers(); }
     resetNSquared() { this.wasmModule.instance.exports.resetNSquared(); }
+    reset() { 
+        Scene1.instance.absorbers.filter(r => r.firstDragEndHasFired).forEach(e => e.destroy());
+        Scene1.instance.refractors.filter(r => r.firstDragEndHasFired).forEach(e => e.destroy());
+        if (CountUpTimer.instance) CountUpTimer.instance.reset();
+    }
 
 //SETTINGS
     setFrequency(value) {

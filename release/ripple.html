@@ -23,41 +23,51 @@
   <canvas id="objects"></canvas>
   <canvas id="ripples"></canvas>
 
-  <div id="settings">
+  <div id="buttons">
+    <img src="assets/play.png" onclick="tank.play();" title="play"></img>
+    <img src="assets/pause.png" onclick="tank.stop();" title="pause"></img>
+    <img src="assets/step.png" onclick="tank.timeStep();" title="step forward"></img>
+    <img src="assets/reset-small.png" onclick="tank.reset();" title="reset"></img>
+    <span id="timerSpan"></span>
+  </div>
+
+  <div id="settings">    
+    
+    
     <div class="fixedHeight">
-      <img src="assets/normal.png" class="left" />
-      <img src="assets/fast.png" class="right" />
+      <img src="assets/normal.png" class="left" title="low wave speed"/>
+      <img src="assets/fast.png" class="right" title="fast wave speed" />
     </div>
     <input class="slider" id="setSpeedSlider" type="range"
       oninput="tank.setSpeed(this.value)" step="0.05" min="0.1" max="0.5"></input>
 
 
     <div class="fixedHeight">
-      <img src="assets/normal.png" class="left" />
-      <img src="assets/highFriction.png" class="right" />
+      <img src="assets/normal.png" class="left"  title="no friction"/>
+      <img src="assets/highFriction.png" class="right"  title="high friction"/>
     </div>
     <input class="slider" id="setFrictionSlider" type="range"
       oninput="tank.setFriction(this.value)" step="0.005" min="0" max="0.05"></input>
 
 
     <div class="fixedHeight">
-      <img src="assets/hardBoundaries.png" class="left" />
-      <img src="assets/softBoundaries.png" class="right" />
+      <img src="assets/hardBoundaries.png" class="left"  title="hard boundaries"/>
+      <img src="assets/softBoundaries.png" class="right"  title="soft boundaries"/>
     </div>
     <input class="slider" id="setHardBoundarySlider" type="range"
       oninput="tank.setHardBoundary(this.value)" step="1" min="0" max="2"></input>
 
     <div class="fixedHeight">
-      <img src="assets/normal.png" class="left" />
-      <img src="assets/highContrast2.png" class="right" />
+      <img src="assets/normal.png" class="left"  title="blurred edges"/>
+      <img src="assets/highContrast2.png" class="right"  title="sharp edges"/>
     </div>
     <input class="slider" id="setHighContrastSlider" type="range"
       oninput="tank.setHighContrast(this.value == 1)" step="1" min="0" max="1"></input>
   
 
     <div class="fixedHeight">
-      <img src="assets/highContrast.png" class="left" />
-      <img src="assets/lowContrast.png" class="right" />
+      <img src="assets/highContrast.png" class="left"  title="high contrast"/>
+      <img src="assets/lowContrast.png" class="right"  title="low contrast"/>
     </div>
     <input class="slider" id="setMaxAmplitudeSlider" type="range"
       oninput="tank.setMaxAmplitude(this.value)" step="0.01" min="0.01" max="1"></input>
@@ -75,17 +85,14 @@
 
 
     <div class="fixedHeight">
-      <p style="display:inline;font-size: 8px; margin: 0" class="left">Aa</p>
-      <p style="display:inline;font-size: 16px; margin: 0" class="right">Aa</p>
+      <p style="display:inline;font-size: 8px; margin: 0" class="left"  title="small fonts">Aa</p>
+      <p style="display:inline;font-size: 16px; margin: 0" class="right"  title="large fonts">Aa</p>
     </div>
     <input class="slider" id="setFontSizeSlider" type="range"
       oninput="HoverText.setFontSize(this.value)" step="2" min="8" max="16"></input>
 
-    <button onclick="tank.timeStep();"> time step</button>
-    <button onclick="tank.play();"> play</button>
-    <button onclick="tank.stop();"> pause</button>
   </div>
-</div>
+</div> <!-- END OF GAMEDIV -->
 
   <script>
 
@@ -104,12 +111,17 @@
       document.getElementById("setColourSlider").value = window["tank"].getColour();
       document.getElementById("setFontSizeSlider").value = HoverText.FONT_SIZE;
 
+      //timer
+      var timer = new CountUpTimer(document.getElementById("timerSpan"));
+
       //game last
       var game = new myGame();
+      
     }
     
     
   </script>
+
 
 </body>
 
