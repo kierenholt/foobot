@@ -5,11 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Attach to index",
+            "name": "Attach to builder",
             "type": "chrome",
             "request": "attach",
             "port": 9222,
-            "url": "http://0.0.0.0:8000/index.html",
+            "url": "http://0.0.0.0:8000/builder.html",
+            "webRoot": "${workspaceFolder}"
+        },
+        {
+            "name": "Attach to solver",
+            "type": "chrome",
+            "request": "attach",
+            "port": 9222,
+            "url": "http://0.0.0.0:8000/solver.html",
             "webRoot": "${workspaceFolder}"
         }
     ]

@@ -1,0 +1,27 @@
+<html>
+    <head>
+
+    </head>
+    <body>
+        <p id="messages">...</p>
+        <script>
+            
+try {
+  let ch = new BroadcastChannel('teachometer-lesson');
+  ch.addEventListener('message', function(paramChannel) {
+      var channel = paramChannel;
+      return (e) => {
+        if (typeof(e.data) == "string" && e.data.substring(0,6) == "foobot") {
+            document.getElementById("messages").innerHTML = e.data;
+            console.log(e.data);
+        };
+      }
+    }(ch)
+  );
+}
+catch (e) {
+  //do nothing
+}
+        </script>
+    </body>
+</html>

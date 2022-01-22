@@ -1,30 +1,81 @@
 
+const GAME_WIDTH = 704;
+const GAME_HEIGHT = 400;
 
+class fooBotBuilder extends Phaser.Game {
 
-class myGame extends Phaser.Game {
-    constructor() {
-      let config = {
+  constructor(levelMapInputId,
+    parentId,
+    codeInputId,
+    playButtonId,
+    resetButtonId,
+    setWidthSliderId,
+    setHeightSliderId) {
+
+    let config = { 
+    
+      type    : Phaser.AUTO,
+      width   : GAME_WIDTH,
+      height  : GAME_HEIGHT,
+          
+      autoFocus: true,
+
+      transparent: true,
+      parent: parentId,
       
-        type    : Phaser.CANVAS,
-        width   : RippleTank.instance.imageWidth + RippleTank.LEFT_PADDING,
-        height  : RippleTank.instance.imageHeight,
-            
-        autoFocus: true,
-  
-        transparent: true,
-        parent  : 'gameDiv',
-        
-        url     : '',
-        title   : 'Blue Ripple tank',
-        version : '0.0.1', 
-  
-        scene   : [ new Scene1() ],
-  
-        canvas: document.getElementById("objects") as HTMLCanvasElement
-      };
-      super(config);
-  
-    }
+      url     : '',
+      title   : 'foobot',
+      version : '0.0.1', 
+      physics: {
+          default: 'arcade'
+      },
+
+      scene   : [ new SceneBuilder(levelMapInputId, 
+        codeInputId,
+        playButtonId,
+        resetButtonId,
+        setWidthSliderId,
+        setHeightSliderId,
+        window.location.search.substring(1)) ]
+    };
+    super(config);
   }
+}
+
+
+class fooBotSolver extends Phaser.Game {
+
+  constructor(
+    parentId,
+    codeInputId,
+    playButtonId,
+    resetButtonId) {
+
+    let config = { 
     
-    
+      type    : Phaser.AUTO,
+      width   : GAME_WIDTH,
+      height  : GAME_HEIGHT,
+          
+      autoFocus: true,
+
+      transparent: true,
+      parent: parentId,
+      
+      url     : '',
+      title   : 'foobot',
+      version : '0.0.1', 
+      physics: {
+          default: 'arcade'
+      },
+
+      scene   : [ new SceneSolver(
+        codeInputId,
+        playButtonId,
+        resetButtonId,
+        window.location.search.substring(1)) ]
+    };
+    super(config);
+  }
+}
+

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>FOOBOT</title>
+  <script src="acorn.js"></script>
+  <script src="phaser.js"></script>
+  <script src="foobot.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body onload="ready()">
+  
+<div id="gameDiv">
+
+
+  <p>Visit this page to solve: <a id="levelMapSpan" href="#">#</a></p>
+
+  <!--- CANVAS IS CREATED HERE --->
+</div> <!-- END OF GAMEDIV -->
+
+
+<div id="settings">    
+    
+  <p>width</p>
+  <input class="slider" id="setWidthSlider" type="range" step="1" min="1" max="8" value="3"></input>
+  <p>height</p>
+  <input class="slider" id="setHeightSlider" type="range" step="1" min="1" max="8" value="3"></input>
+
+</div>
+
+
+<div id="buttons">
+  <img id="playButton" src="assets/play.png" title="play"></img>
+  <img id="resetButton" src="assets/reset-small.png" title="reset"></img>
+  <span id="timerSpan"></span>
+  <br>
+  <textarea id="codeInput">ahead();</textarea>
+</div>
+
+  <script>
+
+    function ready() {
+
+
+      //game last
+      var game = new fooBotBuilder("levelMapSpan",
+        "gameDiv",
+        "codeInput",
+        "playButton",
+        "resetButton",
+        "setWidthSlider",
+        "setHeightSlider");
+      
+    }
+    
+    
+  </script>
+
+</body>
+
+</html>

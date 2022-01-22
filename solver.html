@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>FOOBOT</title>
+  <script src="acorn.js"></script>
+  <script src="phaser.js"></script>
+  <script src="foobot.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body onload="ready()">
+
+  <p>Visit this page to rebuild this puzzle: <a id="levelMapSpan" href="#">#</a></p>
+  
+
+<div id="gameDiv">
+
+  <div id="buttons">
+    <img id="playButton" src="assets/play.png" title="play"></img>
+    <img id="resetButton" src="assets/reset-small.png" title="reset"></img>
+    <span id="timerSpan"></span>
+  </div>
+
+  <!--- CANVAS IS CREATED HERE --->
+</div> <!-- END OF GAMEDIV -->
+
+<textarea id="codeInput">ahead();</textarea>
+
+  <script>
+
+    function ready() {
+
+      document.getElementById("levelMapSpan").href = "builder.html" + window.location.search;
+      document.getElementById("levelMapSpan").innerHTML = "builder.html" + window.location.search;      
+
+      //game last
+      var game = new fooBotSolver(
+        "gameDiv",
+        "codeInput",
+        "playButton",
+        "resetButton");
+      
+    }
+    
+    
+  </script>
+
+</body>
+
+</html>

@@ -20,14 +20,6 @@
             "problemMatcher": []
         },
         {
-            "label": "build wasm untouched",
-            "type": "shell",
-            "command": "echo 'Ga1nsb0r0ugh' | sudo -S npm run asbuild:untouched",
-            "args": [],
-            "group": "build",
-            "problemMatcher": []
-        },
-        {
             "type": "typescript",
             "tsconfig": "tsconfig.json",
             "problemMatcher": [
@@ -43,14 +35,6 @@
                 "$tsc-watch"
             ],
             "group": "build"
-        },
-        {
-            "label": "build wasm optimised",
-            "type": "shell",
-            "command": "echo 'Ga1nsb0r0ugh' | sudo -S npm run asbuild:optimized",
-            "args": [],
-            "group": "build",
-            "problemMatcher": []
         }
     ]
 }
