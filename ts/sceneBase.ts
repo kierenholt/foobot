@@ -149,7 +149,7 @@ class SceneBuilder extends SceneBase {
             //objects2.push(new ConfigObject([2,2],0)); //0 = robot
             //let grid2 = new ConfigGrid(3,3,objects2);
             //this.currentConfig = new Config([grid1,grid2]);
-    }
+        }
 
 
         this.levelMapAnchor.innerHTML = "solver.html?" + this.currentConfig.toBase64();
@@ -214,6 +214,21 @@ class SceneSolver extends SceneBase {
         SceneBase.builderMode = false;
         this.currentConfig = Config.fromBase64(mapAsString);
         this.firstMapAsString = mapAsString;
+
+        if (mapAsString && mapAsString.length > 0) {
+            this.currentConfig = Config.fromBase64(mapAsString);
+        }
+        else {
+            let objects = [];
+            objects.push(new ConfigObject([0,1],0)); //0 = robot
+            let grid1 = new ConfigGrid(3,3,objects);
+            this.currentConfig = new Config([grid1]);    
+            //FOR TESTING
+            //let objects2 = [];
+            //objects2.push(new ConfigObject([2,2],0)); //0 = robot
+            //let grid2 = new ConfigGrid(3,3,objects2);
+            //this.currentConfig = new Config([grid1,grid2]);
+        }
     }
 
     create() {

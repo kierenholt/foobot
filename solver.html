@@ -12,21 +12,27 @@
 
 <body onload="ready()">
 
-  <p>Visit this page to rebuild this puzzle: <a id="levelMapSpan" href="#">#</a></p>
   
 
 <div id="gameDiv">
+  <p>Visit this page to rebuild this puzzle: <a id="levelMapSpan" href="#">#</a></p>
+  <!--- CANVAS IS CREATED HERE --->
+</div> <!-- END OF GAMEDIV -->
 
-  <div id="buttons">
+<div id="buttons">
+
+  <div id="left">
+    <textarea id="codeInput">ahead();</textarea>
+  </div>
+  
+  <div id="right">
     <img id="playButton" src="assets/play.png" title="play"></img>
     <img id="resetButton" src="assets/reset-small.png" title="reset"></img>
     <span id="timerSpan"></span>
   </div>
+</div>
 
-  <!--- CANVAS IS CREATED HERE --->
-</div> <!-- END OF GAMEDIV -->
 
-<textarea id="codeInput">ahead();</textarea>
 
   <script>
 

@@ -13,10 +13,7 @@
 <body onload="ready()">
   
 <div id="gameDiv">
-
-
   <p>Visit this page to solve: <a id="levelMapSpan" href="#">#</a></p>
-
   <!--- CANVAS IS CREATED HERE --->
 </div> <!-- END OF GAMEDIV -->
 
@@ -32,11 +29,14 @@
 
 
 <div id="buttons">
-  <img id="playButton" src="assets/play.png" title="play"></img>
-  <img id="resetButton" src="assets/reset-small.png" title="reset"></img>
-  <span id="timerSpan"></span>
-  <br>
-  <textarea id="codeInput">ahead();</textarea>
+  <div id="left">
+    <textarea id="codeInput">ahead();</textarea>
+  </div>
+  <div id="right">
+    <img id="playButton" src="assets/play.png" title="play"></img>
+    <img id="resetButton" src="assets/reset-small.png" title="reset"></img>
+    <span id="timerSpan"></span>
+  </div>
 </div>
 
   <script>

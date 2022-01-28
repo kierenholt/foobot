@@ -1213,6 +1213,15 @@ class SceneSolver extends SceneBase {
         SceneBase.builderMode = false;
         this.currentConfig = Config.fromBase64(mapAsString);
         this.firstMapAsString = mapAsString;
+        if (mapAsString && mapAsString.length > 0) {
+            this.currentConfig = Config.fromBase64(mapAsString);
+        }
+        else {
+            let objects = [];
+            objects.push(new ConfigObject([0, 1], 0));
+            let grid1 = new ConfigGrid(3, 3, objects);
+            this.currentConfig = new Config([grid1]);
+        }
     }
     create() {
         super.create();
