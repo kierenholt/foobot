@@ -15,7 +15,6 @@ class SceneBase extends Phaser.Scene {
     currentConfig: Config;
     static builderMode: boolean;
 
-
     constructor(
         codeInputId, 
         playButtonId, 
@@ -90,8 +89,11 @@ class SceneBase extends Phaser.Scene {
         for (let configGrid of this.currentConfig.configGrids) {
             let newGrid = new Grid(this,x,y,configGrid);
             this.grids.push(newGrid);
-            y += newGrid.heightInSquares*TILE_SIZE + 64;
+            x = newGrid.rightX + TILE_SIZE;
         }
+        let lastGrid = this.grids[this.grids.length-1];
+        this.scale.resize(lastGrid.rightX + 2*TILE_SIZE, 
+            Math.max(lastGrid.bottomY + TILE_SIZE,GAME_HEIGHT));
     }
 
     /**
@@ -116,6 +118,7 @@ class SceneBuilder extends SceneBase {
     levelMapAnchor: HTMLAnchorElement;
     setWidthSlider: HTMLInputElement;
     setHeightSlider: HTMLInputElement;
+    setNumGridsSlider: HTMLInputElement;
     
     constructor(levelMapSpanId, 
         codeInputId, 
@@ -123,6 +126,7 @@ class SceneBuilder extends SceneBase {
         resetButtonId,
         setWidthSliderId,
         setHeightSliderId,
+        setNumGridsId,
         mapAsString) {
         super(codeInputId, 
             playButtonId, 
@@ -135,15 +139,14 @@ class SceneBuilder extends SceneBase {
         this.setWidthSlider.oninput = this.setGridWidths.bind(this);
         this.setHeightSlider = document.getElementById(setHeightSliderId) as HTMLInputElement;
         this.setHeightSlider.oninput = this.setGridHeights.bind(this);
+        this.setNumGridsSlider = document.getElementById(setNumGridsId) as HTMLInputElement;
+        this.setNumGridsSlider.oninput = this.setNumGrids.bind(this);
 
         if (mapAsString && mapAsString.length > 0) {
             this.currentConfig = Config.fromBase64(mapAsString);
         }
         else {
-            let objects = [];
-            objects.push(new ConfigObject([0,1],0)); //0 = robot
-            let grid1 = new ConfigGrid(3,3,objects);
-            this.currentConfig = new Config([grid1]);    
+            this.currentConfig = new Config([ConfigGrid.createDefaultGrid(this.setWidthSlider.value, this.setHeightSlider.value)]);    
             //FOR TESTING
             //let objects2 = [];
             //objects2.push(new ConfigObject([2,2],0)); //0 = robot
@@ -182,6 +185,12 @@ class SceneBuilder extends SceneBase {
 
     setGridHeights(event) {
         this.currentConfig.configGrids.forEach(g => g.setHeight(Number(this.setHeightSlider.value)));
+        this.resetButtonAction();
+        this.updateConfigSpan();
+    }
+
+    setNumGrids(event) {
+        this.currentConfig.setNumGrids(this.setNumGridsSlider.value);
         this.resetButtonAction();
         this.updateConfigSpan();
     }

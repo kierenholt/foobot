@@ -1,6 +1,6 @@
 
-const GAME_WIDTH = 704;
-const GAME_HEIGHT = 400;
+const GAME_WIDTH = 700;
+const GAME_HEIGHT = 300;
 
 class fooBotBuilder extends Phaser.Game {
 
@@ -10,7 +10,8 @@ class fooBotBuilder extends Phaser.Game {
     playButtonId,
     resetButtonId,
     setWidthSliderId,
-    setHeightSliderId) {
+    setHeightSliderId,
+    setNumGridsId) {
 
     let config = { 
     
@@ -30,12 +31,19 @@ class fooBotBuilder extends Phaser.Game {
           default: 'arcade'
       },
 
+      scale: {
+        min: {
+          height: GAME_HEIGHT
+        }
+      },
+
       scene   : [ new SceneBuilder(levelMapInputId, 
         codeInputId,
         playButtonId,
         resetButtonId,
         setWidthSliderId,
         setHeightSliderId,
+        setNumGridsId,
         window.location.search.substring(1)) ]
     };
     super(config);

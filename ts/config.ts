@@ -36,6 +36,12 @@ class ConfigGrid {
         this.objects = objects;
     }
 
+    static createDefaultGrid(width, height) {
+        let objects = [];
+        objects.push(new ConfigObject([0,0],0)); //0 = robot
+        return new ConfigGrid(width,height,objects);
+    }
+
     toBase64(): string {
         //first char is height and width up to max 8
         let ret = "";
@@ -108,6 +114,20 @@ class Config {
 
     constructor(configGrids: ConfigGrid[]) {
         this.configGrids = configGrids;
+    }
+
+    setNumGrids(value) {
+        if (value < 1) {return};
+        if (value > this.configGrids.length) {
+            for (let i = this.configGrids.length; i < value; i++) {
+                let h = this.configGrids[0].height;
+                let w = this.configGrids[0].width;
+                this.configGrids.push(ConfigGrid.createDefaultGrid(w,h));
+            }
+        }
+        else if (value < this.configGrids.length) {
+            this.configGrids = this.configGrids.slice(0, value);
+        }
     }
 
     toBase64() {

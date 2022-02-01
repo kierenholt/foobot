@@ -181,6 +181,11 @@ class ConfigGrid {
         this.height = height;
         this.objects = objects;
     }
+    static createDefaultGrid(width, height) {
+        let objects = [];
+        objects.push(new ConfigObject([0, 0], 0));
+        return new ConfigGrid(width, height, objects);
+    }
     toBase64() {
         let ret = "";
         ret += Config.RADIX[8 * (this.width - 1) + this.height - 1];
@@ -239,6 +244,22 @@ class Config {
     constructor(configGrids) {
         this.configGrids = configGrids;
     }
+    setNumGrids(value) {
+        if (value < 1) {
+            return;
+        }
+        ;
+        if (value > this.configGrids.length) {
+            for (let i = this.configGrids.length; i < value; i++) {
+                let h = this.configGrids[0].height;
+                let w = this.configGrids[0].width;
+                this.configGrids.push(ConfigGrid.createDefaultGrid(w, h));
+            }
+        }
+        else if (value < this.configGrids.length) {
+            this.configGrids = this.configGrids.slice(0, value);
+        }
+    }
     toBase64() {
         let ret = "";
         for (let grid of this.configGrids) {
@@ -260,10 +281,10 @@ class Config {
     }
 }
 Config.RADIX = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
-const GAME_WIDTH = 704;
-const GAME_HEIGHT = 400;
+const GAME_WIDTH = 700;
+const GAME_HEIGHT = 300;
 class fooBotBuilder extends Phaser.Game {
-    constructor(levelMapInputId, parentId, codeInputId, playButtonId, resetButtonId, setWidthSliderId, setHeightSliderId) {
+    constructor(levelMapInputId, parentId, codeInputId, playButtonId, resetButtonId, setWidthSliderId, setHeightSliderId, setNumGridsId) {
         let config = {
             type: Phaser.AUTO,
             width: GAME_WIDTH,
@@ -277,7 +298,12 @@ class fooBotBuilder extends Phaser.Game {
             physics: {
                 default: 'arcade'
             },
-            scene: [new SceneBuilder(levelMapInputId, codeInputId, playButtonId, resetButtonId, setWidthSliderId, setHeightSliderId, window.location.search.substring(1))]
+            scale: {
+                min: {
+                    height: GAME_HEIGHT
+                }
+            },
+            scene: [new SceneBuilder(levelMapInputId, codeInputId, playButtonId, resetButtonId, setWidthSliderId, setHeightSliderId, setNumGridsId, window.location.search.substring(1))]
         };
         super(config);
     }
@@ -1139,8 +1165,10 @@ class SceneBase extends Phaser.Scene {
         for (let configGrid of this.currentConfig.configGrids) {
             let newGrid = new Grid(this, x, y, configGrid);
             this.grids.push(newGrid);
-            y += newGrid.heightInSquares * TILE_SIZE + 64;
+            x = newGrid.rightX + TILE_SIZE;
         }
+        let lastGrid = this.grids[this.grids.length - 1];
+        this.scale.resize(lastGrid.rightX + 2 * TILE_SIZE, Math.max(lastGrid.bottomY + TILE_SIZE, GAME_HEIGHT));
     }
     getContainingGrid(x, y) {
         for (let grid of this.grids) {
@@ -1155,7 +1183,7 @@ class SceneBase extends Phaser.Scene {
     }
 }
 class SceneBuilder extends SceneBase {
-    constructor(levelMapSpanId, codeInputId, playButtonId, resetButtonId, setWidthSliderId, setHeightSliderId, mapAsString) {
+    constructor(levelMapSpanId, codeInputId, playButtonId, resetButtonId, setWidthSliderId, setHeightSliderId, setNumGridsId, mapAsString) {
         super(codeInputId, playButtonId, resetButtonId);
         SceneBase.builderMode = true;
         this.levelMapAnchor = document.getElementById(levelMapSpanId);
@@ -1163,14 +1191,13 @@ class SceneBuilder extends SceneBase {
         this.setWidthSlider.oninput = this.setGridWidths.bind(this);
         this.setHeightSlider = document.getElementById(setHeightSliderId);
         this.setHeightSlider.oninput = this.setGridHeights.bind(this);
+        this.setNumGridsSlider = document.getElementById(setNumGridsId);
+        this.setNumGridsSlider.oninput = this.setNumGrids.bind(this);
         if (mapAsString && mapAsString.length > 0) {
             this.currentConfig = Config.fromBase64(mapAsString);
         }
         else {
-            let objects = [];
-            objects.push(new ConfigObject([0, 1], 0));
-            let grid1 = new ConfigGrid(3, 3, objects);
-            this.currentConfig = new Config([grid1]);
+            this.currentConfig = new Config([ConfigGrid.createDefaultGrid(this.setWidthSlider.value, this.setHeightSlider.value)]);
         }
         this.levelMapAnchor.innerHTML = "solver.html?" + this.currentConfig.toBase64();
         this.levelMapAnchor.href = "solver.html?" + this.currentConfig.toBase64();
@@ -1194,6 +1221,11 @@ class SceneBuilder extends SceneBase {
     }
     setGridHeights(event) {
         this.currentConfig.configGrids.forEach(g => g.setHeight(Number(this.setHeightSlider.value)));
+        this.resetButtonAction();
+        this.updateConfigSpan();
+    }
+    setNumGrids(event) {
+        this.currentConfig.setNumGrids(this.setNumGridsSlider.value);
         this.resetButtonAction();
         this.updateConfigSpan();
     }
