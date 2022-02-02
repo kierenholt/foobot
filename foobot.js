@@ -177,8 +177,8 @@ class ConfigObject {
 }
 class ConfigGrid {
     constructor(width, height, objects) {
-        this.width = width;
-        this.height = height;
+        this.width = Number(width);
+        this.height = Number(height);
         this.objects = objects;
     }
     static createDefaultGrid(width, height) {
@@ -203,7 +203,7 @@ class ConfigGrid {
         return new ConfigGrid(width, height, objects);
     }
     setWidth(value) {
-        this.width = value;
+        this.width = Number(value);
         let deepCopy = [...this.objects];
         for (let o of deepCopy) {
             if (o.mapCoords[0] >= value) {
@@ -218,7 +218,7 @@ class ConfigGrid {
         }
     }
     setHeight(value) {
-        this.height = value;
+        this.height = Number(value);
         let deepCopy = [...this.objects];
         for (let o of deepCopy) {
             if (o.mapCoords[1] >= value) {
@@ -245,6 +245,7 @@ class Config {
         this.configGrids = configGrids;
     }
     setNumGrids(value) {
+        value = Number(value);
         if (value < 1) {
             return;
         }

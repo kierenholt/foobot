@@ -31,8 +31,8 @@ class ConfigGrid {
     objects: ConfigObject[];
 
     constructor(width,height,objects) {
-        this.width = width;
-        this.height = height;
+        this.width = Number(width);
+        this.height = Number(height);
         this.objects = objects;
     }
 
@@ -64,7 +64,7 @@ class ConfigGrid {
     }
 
     setWidth(value) {
-        this.width = value;
+        this.width = Number(value);
         //must deep copy before altering array in loop
         let deepCopy = [...this.objects];
         for (let o of deepCopy) {
@@ -82,7 +82,7 @@ class ConfigGrid {
 
 
     setHeight(value) {
-        this.height = value;
+        this.height = Number(value);
         //must deep copy before altering array in loop
         let deepCopy = [...this.objects];
         for (let o of deepCopy) {
@@ -117,6 +117,7 @@ class Config {
     }
 
     setNumGrids(value) {
+        value = Number(value);
         if (value < 1) {return};
         if (value > this.configGrids.length) {
             for (let i = this.configGrids.length; i < value; i++) {
