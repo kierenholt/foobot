@@ -20,15 +20,16 @@ const mapTextureCodes = [
   "cherryBox-tick" ,//= 11
   "dragonballBox-tick" ,//= 12
   
-  "spikes" //= 9
+  "spikes" //
 ];
 
 class GridSprite extends Phaser.GameObjects.Sprite {
     typeNumber: number;
     scene: SceneBase;
     grid: Grid;
+    configObject: ConfigObject;
 
-    constructor(grid,scene,x,y,typeNumber,texture,frame?) {
+    constructor(grid,scene,x,y,typeNumber,texture,frame?,configObject?) {
         if (frame) {
             super(scene,x,y,texture,frame);
         }
@@ -38,12 +39,23 @@ class GridSprite extends Phaser.GameObjects.Sprite {
         scene.add.existing(this);
         this.typeNumber = typeNumber; 
         this.scene = scene;
-        this.grid = grid;        
+        this.grid = grid;
+        if (configObject) this.configObject = configObject;
     }
  
     get mapCoords() {
         if (!this.grid) throw "no grid";
         return this.grid.getMapCoordsFromXY(this.x,this.y);
+    }
+
+    destroy() {
+        //if (this.grid) this.grid.removeItem(this); do not destroy the configobject
+        super.destroy();
+    }
+
+    createConfigObject(grid: Grid) {
+        let coords = grid.getMapCoordsFromXY(this.x,this.y);
+        return new ConfigObject(coords,this.typeNumber);
     }
 }
 
@@ -57,8 +69,8 @@ abstract class DraggableGridSprite extends GridSprite {
     isDragging: boolean;
     notYetInGrid: boolean;
 
-    constructor(grid,scene,x,y,typeNumber,texture,frame?) {
-        super(grid,scene,x,y,typeNumber,texture,frame);
+    constructor(grid,scene,x,y,typeNumber,texture,frame?,configObject?) {
+        super(grid,scene,x,y,typeNumber,texture,frame,configObject);
 
         if (SceneBase.builderMode) {
             this.isDragging = false;
@@ -79,10 +91,9 @@ abstract class DraggableGridSprite extends GridSprite {
             }
             //remove from grid, if within one
             if (this.grid && this.mapCoords) {
-                this.getGridGroup().remove(this);
-                (SceneBase.instance as SceneBuilder).removeObjectFromGridConfig(this.grid,this.mapCoords);
+                this.grid.removeItem(this);
+                if (this.configObject) this.grid.configGrid.removeObject(this.configObject);
                 this.grid = null;
-                (SceneBase.instance as SceneBuilder).updateCurrentConfigFromSprites();
             }
             //reset grids
             SceneBase.instance.resetButtonAction();
@@ -102,18 +113,9 @@ abstract class DraggableGridSprite extends GridSprite {
             let [destX,destY] = this.grid.snapToTileCentres(this.x,this.y);
             let getsPlaced = this.grid.allowsItemToBePlaced(this,destX,destY);
             if (getsPlaced) {
-
-                let box =  this.grid.getFoodOrBoxAtXY(destX,destY) as Box;
-                if (box && this instanceof Food) {
-                    box.acceptFruit(this); //destroys this
-                }
-                else {
-                    this.x = destX;
-                    this.y = destY;
-                    this.notYetInGrid = false;
-                    this.getGridGroup().add(this);    
-                }
-                (SceneBase.instance as SceneBuilder).updateCurrentConfigFromSprites();    
+                grid.placeItem(this, destX,destY);
+                this.configObject = this.createConfigObject(grid);
+                this.grid.configGrid.addObject(this.configObject);
             }
             else {
                 this.destroy();
@@ -125,14 +127,13 @@ abstract class DraggableGridSprite extends GridSprite {
         }
     }
 
-    abstract getGridGroup(): Phaser.GameObjects.Group
     abstract clone();
 }
 
 class Food extends DraggableGridSprite  {
 
-    constructor(grid,scene,x,y,typeNumber) {
-        super(grid,scene,x,y,typeNumber,"food",mapTextureCodes[typeNumber]);
+    constructor(grid,scene,x,y,typeNumber,configObject?) {
+        super(grid,scene,x,y,typeNumber,"food",mapTextureCodes[typeNumber],configObject);
         this.setScale(FOOD_SCALE);
 
     }
@@ -142,11 +143,9 @@ class Food extends DraggableGridSprite  {
     }
 
     clone() { return new Food(null,this.scene,this.x,this.y,this.typeNumber); } 
-    getGridGroup() { return this.grid.food; }
 
-    destroy() {
-        if (this.grid) this.getGridGroup().remove(this);
-        super.destroy();
+    get foodType() {
+        return this.typeNumber;
     }
 }
 
@@ -154,8 +153,8 @@ class Food extends DraggableGridSprite  {
 class Box extends DraggableGridSprite  {
     _containsFruit: boolean;
 
-    constructor(grid,scene,x,y,typeNumber) {
-        super(grid,scene,x,y,typeNumber,"boxes",mapTextureCodes[typeNumber]);
+    constructor(grid,scene,x,y,typeNumber,configObject?) {
+        super(grid,scene,x,y,typeNumber,"boxes",mapTextureCodes[typeNumber],configObject);
         this._containsFruit = (typeNumber > 8);
         //this.setScale(FOOD_SCALE);
     }
@@ -165,20 +164,15 @@ class Box extends DraggableGridSprite  {
     }
 
     clone() { return new Box(null,this.scene,this.x,this.y,this.typeNumber); } 
-    getGridGroup() { return this.grid.boxes; }
 
-    destroy() {
-        super.destroy();
-        if (this.grid) helpers.removeFromArray(this.grid.boxes,this);
-    }
-
-    matchesFoodType(food: Food) {
-        return food.typeNumber == this.typeNumber - 4;
+    get foodType() {
+        return this._containsFruit ? this.typeNumber - 8 : this.typeNumber - 4;
     }
 
     acceptFruit(item: Food) {
-        if (!this.matchesFoodType(item)) throw("does not match food type");
+        if (this.foodType != item.foodType) throw("does not match food type");
         item.destroy();
+        this.grid.removeItem(item);
         this.containsFruit = true;
     }
 

@@ -6,13 +6,20 @@ class Grid  {
     floors: Phaser.GameObjects.Group;
     robot: Robot;
     busy: boolean;
+
     food: Phaser.GameObjects.Group;
     boxes: Phaser.GameObjects.Group;
+    numbers: Phaser.GameObjects.Group;
 
     leftX: number;
     topY: number;
 
-    constructor(scene: SceneBase,originX,originY,configGrid: ConfigGrid) {
+    configGrid: ConfigGrid;
+
+    constructor(scene: SceneBase,
+        originX,
+        originY,
+        configGrid: ConfigGrid) {
         this.scene = scene;
 
         this.leftX = originX;
@@ -21,7 +28,9 @@ class Grid  {
         this.floors = scene.physics.add.staticGroup();
         this.food = scene.physics.add.group();
         this.boxes = scene.physics.add.group();
+        this.numbers = scene.physics.add.group();
 
+        this.configGrid = configGrid;
         this.reset(configGrid);
       }
 
@@ -34,6 +43,8 @@ class Grid  {
         this.floors.clear(true, true);
         this.food.clear(true, true);
         this.boxes.clear(true, true);
+        this.numbers.clear(true,true);
+
         if (this.robot) {
             this.robot.destroy();
             this.robot = null;
@@ -52,24 +63,54 @@ class Grid  {
         for (let object of configGrid.objects) {
             let coords = this.getXYfromMapCoords(object.mapCoords);
             if (object.typeNumber == 0) {
-                this.robot = new Robot(this, this.scene,coords[0],coords[1]);
+                this.robot = new Robot(this, this.scene,coords[0],coords[1],object);
 
                 this.robot.lookingIndex = 0;
                 if (this.robot.carryingFruit) this.robot.carryingFruit.destroy();
                 this.robot.isScoopDown = true;
             }
             else if (object.typeNumber >= 1 && object.typeNumber <= 4) {
-                let newFood = new Food(this, this.scene,coords[0],coords[1], object.typeNumber);
+                let newFood = new Food(this, this.scene,coords[0],coords[1], object.typeNumber, object);
                 newFood.notYetInGrid = false;
                 this.food.add(newFood);
             }
             else if (object.typeNumber >= 5 && object.typeNumber <= 12) {
-                let newBox = new Box(this, this.scene,coords[0],coords[1], object.typeNumber);
+                let newBox = new Box(this, this.scene,coords[0],coords[1], object.typeNumber, object);
                 newBox.notYetInGrid = false;
                 this.boxes.add(newBox);
             }
             else {
                 throw("bad typenumber");
+            }
+        }
+
+        this.refreshFruitCounts();
+    }
+
+    refreshFruitCounts() {
+        this.numbers.clear(true,true);
+        //numbers - group objects first
+        let groupedByCoords = {};
+        for (let food of (this.food.getChildren() as Food[])) {
+            let key = this.getUniqueKeyFromXY(food);
+            if (key in groupedByCoords) {
+                groupedByCoords[key].push(food);
+            }
+            else {
+                groupedByCoords[key] = [food];
+            }
+        }
+        for (let key in groupedByCoords) {
+            if (groupedByCoords[key].length > 1) {
+                let x = groupedByCoords[key][0].x + 16;
+                let y = groupedByCoords[key][0].y + 14;
+                
+                let newText =  this.scene.add.text(x, y, groupedByCoords[key].length, {
+                    fill:"#000",
+                    fontSize:"14px",
+                    fontFamily:"Arial Black"
+                  });
+                this.numbers.add(newText);
             }
         }
     }
@@ -102,6 +143,11 @@ class Grid  {
         let mapCoords = this.getMapCoordsFromXY(x,y);
         if (mapCoords) return this.getXYfromMapCoords(mapCoords);
         return null;
+    }
+
+    getUniqueKeyFromXY(item: Phaser.GameObjects.Sprite): number {
+        let mapCoords = this.getMapCoordsFromXY(item.x,item.y);
+        return mapCoords[0]*8 + mapCoords[1];
     }
 
     getMapCoordsFromXY(x,y) {
@@ -144,10 +190,8 @@ class Grid  {
         let foodOrBoxAlreadyThere = this.getFoodOrBoxAtXY(destX,destY);
         if (foodOrBoxAlreadyThere) {
             //it might be the same type box as the fruit
-            if (foodOrBoxAlreadyThere instanceof Box && item instanceof Food) {
-                if (!foodOrBoxAlreadyThere.containsFruit && foodOrBoxAlreadyThere.matchesFoodType(item)) {
-                    return true;
-                }
+            if (item instanceof Food && foodOrBoxAlreadyThere.foodType == item.foodType) {
+                return true;
             }
             return false;
         }
@@ -164,10 +208,40 @@ class Grid  {
         return (this.boxes.getChildren() as Box[]).every(b => b.containsFruit);
     }
 
+    placeItem(item, destX, destY) {
+        let destItem =  this.getFoodOrBoxAtXY(destX,destY);
+        if (destItem instanceof Box && item instanceof Food) {
+            destItem.acceptFruit(item); //destroys this
+        }
+        else {
+            item.grid = this;
+            item.x = destX;
+            item.y = destY;
+            item.notYetInGrid = false;
+            this.getGroup(item).add(item);
+        }
+        this.refreshFruitCounts();
+
+    }
+
+    getGroup(item): Phaser.GameObjects.Group {
+        if (item instanceof Food) return this.food;
+        if (item instanceof Box) return this.boxes;
+        if (item instanceof Floor) return this.floors;
+    }
+
+
+    removeItem(item: GridSprite) {
+        let group = this.getGroup(item);
+        if (group) group.remove(item);
+        this.refreshFruitCounts();
+    }
+
     destroy() {
         this.food.clear(true,true);
         this.boxes.clear(true,true);
         if (this.robot) this.robot.destroy();
         this.floors.clear(true,true);
+        this.numbers.clear(true,true);
     }
 }

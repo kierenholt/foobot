@@ -29,10 +29,11 @@ class Robot extends GridSprite {
 
   isDragging: boolean;
 
-  constructor(grid, scene, x, y) {
-    super(grid, scene, x, y, 1, "body", "RightLowered");
+  constructor(grid, scene, x, y, configObject?) {
+    super(grid, scene, x, y, 1, "body", "RightLowered", configObject);
     this.setDepth(10);
 
+    this.typeNumber = 0;
     this.isDragging = false;
     this.scene.input.setDraggable(this.setInteractive());
 
@@ -117,7 +118,7 @@ class Robot extends GridSprite {
         robot.isScoopDown = false;
         robot.setFrame(Robot.lookingBodyFrames[robot.isScoopDown ? 1 : 0][robot.lookingIndex]);
         if (fruit) {
-          fruit.getGridGroup().remove(fruit);
+          robot.grid.removeItem(fruit);
           fruit.setPosition(robot.x, robot.y-Robot.carryingHeight);
         }
         if (paramOnCompleteTween) paramOnCompleteTween.play();
@@ -157,15 +158,8 @@ class Robot extends GridSprite {
         if (fruit) {
           if (canDrop) {
             //lower it
-            let box =  robot.grid.getFoodOrBoxAtXY(dropCoords[0], dropCoords[1]) as Box;
-            if (box) {
-              box.acceptFruit(fruit);
-            }
-            else {
-              fruit.setPosition(dropCoords[0], dropCoords[1]);
-              fruit.grid = robot.grid;
-              fruit.getGridGroup().add(fruit);
-            }
+            robot.grid.placeItem(fruit,dropCoords[0],dropCoords[1]);
+            
             robot.isScoopDown = true;
             robot.setFrame(Robot.lookingBodyFrames[robot.isScoopDown ? 1 : 0][robot.lookingIndex]);   
             }
@@ -348,8 +342,8 @@ class Robot extends GridSprite {
       //remove from grid, if within one
       if (this.grid && this.mapCoords) {
         this.grid.robot = null; 
-        SceneBase.instance.removeObjectFromGridConfig(this.grid, this.mapCoords); 
-        //Scene1.instance.updateCurrentConfigFromSprites(); DO NOT UPDATE
+        if (this.configObject) this.grid.configGrid.removeObject(this.configObject); 
+        this.configObject = null;
       }
       //reset grids
       SceneBase.instance.resetButtonAction();
@@ -385,7 +379,8 @@ class Robot extends GridSprite {
       //its a brand new grid that has been made, but the same old robot
       this.grid = grid;
       this.grid.robot = this;
-      (SceneBase.instance as SceneBuilder).updateCurrentConfigFromSprites();
+      this.configObject = this.createConfigObject(this.grid);
+      this.grid.configGrid.addObject(this.configObject)
     }
   }
 
@@ -395,50 +390,3 @@ class Robot extends GridSprite {
   }
 }
 
-
-/*
-class fooBotCanvas extends Container implements ValueField, SetImageField {
-  errorText: Span; 
-  icon: Icon;
-  canvasDiv: CanvasCup;
-  game: fooBotGame;
-  initialised: boolean = false;
-  constructor(parent) {
-    super(parent,"div");
-    this.canvasDiv = new Container(this,"div");
-    this.icon = new Icon(this,IconName.none);
-    this.errorText = new Span(this,"");
-    
-    this.appendChildren([this.canvasDiv,this.icon,this.errorText]);
-  }
-
-  initialise(levelMap) {
-    this.initialised = true;
-    setTimeout( function(container,levelMap) {
-      var container = container;
-      var levelMap = levelMap;
-      return () => {container.game = new fooBotGame(levelMap,container.canvasDiv.UID);}
-    }(this,levelMap), 1000 );
-  }
-
-  run(code,onComplete) {
-      if (!this.game) return undefined;
-      return this.game.run(code, onComplete);
-  }
-
-  getCurrentMap() { return this.game.getCurrentMap();}
-
-  setDecisionImage(value: IconName) { this.icon.setIconName(value); }
-  setValue(value: string) {  }
-  getValue() { return "";  }
-  setErrorText(value) { 
-      this.errorText.innerHTML = value;
-      if (value.length > 0) this.setDecisionImage(IconName.error);
-  }
-  resetError() {
-      this.errorText.innerHTML = "";
-      if (this.icon.getIconName() == IconName.error) { this.setDecisionImage(IconName.none); }
-  }
-
-}
-*/

@@ -16,7 +16,7 @@ const mapTextureCodes = [
     "spikes"
 ];
 class GridSprite extends Phaser.GameObjects.Sprite {
-    constructor(grid, scene, x, y, typeNumber, texture, frame) {
+    constructor(grid, scene, x, y, typeNumber, texture, frame, configObject) {
         if (frame) {
             super(scene, x, y, texture, frame);
         }
@@ -27,11 +27,20 @@ class GridSprite extends Phaser.GameObjects.Sprite {
         this.typeNumber = typeNumber;
         this.scene = scene;
         this.grid = grid;
+        if (configObject)
+            this.configObject = configObject;
     }
     get mapCoords() {
         if (!this.grid)
             throw "no grid";
         return this.grid.getMapCoordsFromXY(this.x, this.y);
+    }
+    destroy() {
+        super.destroy();
+    }
+    createConfigObject(grid) {
+        let coords = grid.getMapCoordsFromXY(this.x, this.y);
+        return new ConfigObject(coords, this.typeNumber);
     }
 }
 class Floor extends GridSprite {
@@ -40,8 +49,8 @@ class Floor extends GridSprite {
     }
 }
 class DraggableGridSprite extends GridSprite {
-    constructor(grid, scene, x, y, typeNumber, texture, frame) {
-        super(grid, scene, x, y, typeNumber, texture, frame);
+    constructor(grid, scene, x, y, typeNumber, texture, frame, configObject) {
+        super(grid, scene, x, y, typeNumber, texture, frame, configObject);
         if (SceneBase.builderMode) {
             this.isDragging = false;
             this.notYetInGrid = true;
@@ -57,10 +66,10 @@ class DraggableGridSprite extends GridSprite {
                 this.scene.add.existing(this.clone());
             }
             if (this.grid && this.mapCoords) {
-                this.getGridGroup().remove(this);
-                SceneBase.instance.removeObjectFromGridConfig(this.grid, this.mapCoords);
+                this.grid.removeItem(this);
+                if (this.configObject)
+                    this.grid.configGrid.removeObject(this.configObject);
                 this.grid = null;
-                SceneBase.instance.updateCurrentConfigFromSprites();
             }
             SceneBase.instance.resetButtonAction();
         }
@@ -78,17 +87,9 @@ class DraggableGridSprite extends GridSprite {
             let [destX, destY] = this.grid.snapToTileCentres(this.x, this.y);
             let getsPlaced = this.grid.allowsItemToBePlaced(this, destX, destY);
             if (getsPlaced) {
-                let box = this.grid.getFoodOrBoxAtXY(destX, destY);
-                if (box && this instanceof Food) {
-                    box.acceptFruit(this);
-                }
-                else {
-                    this.x = destX;
-                    this.y = destY;
-                    this.notYetInGrid = false;
-                    this.getGridGroup().add(this);
-                }
-                SceneBase.instance.updateCurrentConfigFromSprites();
+                grid.placeItem(this, destX, destY);
+                this.configObject = this.createConfigObject(grid);
+                this.grid.configGrid.addObject(this.configObject);
             }
             else {
                 this.destroy();
@@ -100,43 +101,35 @@ class DraggableGridSprite extends GridSprite {
     }
 }
 class Food extends DraggableGridSprite {
-    constructor(grid, scene, x, y, typeNumber) {
-        super(grid, scene, x, y, typeNumber, "food", mapTextureCodes[typeNumber]);
+    constructor(grid, scene, x, y, typeNumber, configObject) {
+        super(grid, scene, x, y, typeNumber, "food", mapTextureCodes[typeNumber], configObject);
         this.setScale(FOOD_SCALE);
     }
     get letterForPeek() {
         return ["a", "b", "c", "d"][this.typeNumber - 1];
     }
     clone() { return new Food(null, this.scene, this.x, this.y, this.typeNumber); }
-    getGridGroup() { return this.grid.food; }
-    destroy() {
-        if (this.grid)
-            this.getGridGroup().remove(this);
-        super.destroy();
+    get foodType() {
+        return this.typeNumber;
     }
 }
 class Box extends DraggableGridSprite {
-    constructor(grid, scene, x, y, typeNumber) {
-        super(grid, scene, x, y, typeNumber, "boxes", mapTextureCodes[typeNumber]);
+    constructor(grid, scene, x, y, typeNumber, configObject) {
+        super(grid, scene, x, y, typeNumber, "boxes", mapTextureCodes[typeNumber], configObject);
         this._containsFruit = (typeNumber > 8);
     }
     get letterForPeek() {
         return ["A", "B", "C", "D"][this.typeNumber - 5];
     }
     clone() { return new Box(null, this.scene, this.x, this.y, this.typeNumber); }
-    getGridGroup() { return this.grid.boxes; }
-    destroy() {
-        super.destroy();
-        if (this.grid)
-            helpers.removeFromArray(this.grid.boxes, this);
-    }
-    matchesFoodType(food) {
-        return food.typeNumber == this.typeNumber - 4;
+    get foodType() {
+        return this._containsFruit ? this.typeNumber - 8 : this.typeNumber - 4;
     }
     acceptFruit(item) {
-        if (!this.matchesFoodType(item))
+        if (this.foodType != item.foodType)
             throw ("does not match food type");
         item.destroy();
+        this.grid.removeItem(item);
         this.containsFruit = true;
     }
     set containsFruit(value) {
@@ -187,6 +180,8 @@ class ConfigGrid {
         return new ConfigGrid(width, height, objects);
     }
     toBase64() {
+        if (this.objects.find(o => o.typeNumber == 0) == undefined)
+            return "";
         let ret = "";
         ret += Config.RADIX[8 * (this.width - 1) + this.height - 1];
         ret += this.objects.map(o => o.toBase64()).join("");
@@ -209,7 +204,7 @@ class ConfigGrid {
             if (o.mapCoords[0] >= value) {
                 if (o.typeNumber == 0) {
                     o.mapCoords = [value - 1, o.mapCoords[1]];
-                    this.removeFood([value - 1, o.mapCoords[1]]);
+                    this.removeAllObjectsAtCoords([value - 1, o.mapCoords[1]]);
                 }
                 else {
                     helpers.removeFromArray(this.objects, o);
@@ -223,7 +218,7 @@ class ConfigGrid {
         for (let o of deepCopy) {
             if (o.mapCoords[1] >= value) {
                 if (o.typeNumber == 0) {
-                    this.removeFood([o.mapCoords[0], value - 1]);
+                    this.removeAllObjectsAtCoords([o.mapCoords[0], value - 1]);
                     o.mapCoords = [o.mapCoords[0], value - 1];
                 }
                 else {
@@ -232,17 +227,33 @@ class ConfigGrid {
             }
         }
     }
-    removeFood(mapCoords) {
+    removeAllObjectsAtCoords(mapCoords) {
         for (let o of this.objects) {
             if (o.mapCoords[0] == mapCoords[0] && o.mapCoords[1] == mapCoords[1]) {
                 helpers.removeFromArray(this.objects, o);
             }
         }
     }
+    removeObject(item) {
+        helpers.removeFromArray(this.objects, item);
+        if (this.onUpdate)
+            this.onUpdate();
+    }
+    addObject(object) {
+        this.objects.push(object);
+        if (this.onUpdate)
+            this.onUpdate();
+    }
 }
 class Config {
-    constructor(configGrids) {
+    constructor(configGrids, updateFunc) {
         this.configGrids = configGrids;
+        this.func = updateFunc;
+        this.configGrids.forEach(g => g.onUpdate = this.onUpdate.bind(this));
+    }
+    onUpdate() {
+        if (this.func)
+            this.func(this.toBase64());
     }
     setNumGrids(value) {
         value = Number(value);
@@ -254,7 +265,9 @@ class Config {
             for (let i = this.configGrids.length; i < value; i++) {
                 let h = this.configGrids[0].height;
                 let w = this.configGrids[0].width;
-                this.configGrids.push(ConfigGrid.createDefaultGrid(w, h));
+                let newGrid = ConfigGrid.createDefaultGrid(w, h);
+                newGrid.onUpdate = this.onUpdate.bind(this);
+                this.configGrids.push(newGrid);
             }
         }
         else if (value < this.configGrids.length) {
@@ -264,6 +277,8 @@ class Config {
     toBase64() {
         let ret = "";
         for (let grid of this.configGrids) {
+            if (grid.objects.length == 0)
+                return "";
             ret += Config.RADIX[grid.objects.length - 1];
             ret += grid.toBase64();
         }
@@ -278,7 +293,7 @@ class Config {
             grids.push(ConfigGrid.fromBase64(str2));
             i += numObjects * 2 + 1 + 1;
         }
-        return new Config(grids);
+        return new Config(grids, null);
     }
 }
 Config.RADIX = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
@@ -337,6 +352,8 @@ class Grid {
         this.floors = scene.physics.add.staticGroup();
         this.food = scene.physics.add.group();
         this.boxes = scene.physics.add.group();
+        this.numbers = scene.physics.add.group();
+        this.configGrid = configGrid;
         this.reset(configGrid);
     }
     reset(configGrid) {
@@ -345,6 +362,7 @@ class Grid {
         this.floors.clear(true, true);
         this.food.clear(true, true);
         this.boxes.clear(true, true);
+        this.numbers.clear(true, true);
         if (this.robot) {
             this.robot.destroy();
             this.robot = null;
@@ -359,24 +377,50 @@ class Grid {
         for (let object of configGrid.objects) {
             let coords = this.getXYfromMapCoords(object.mapCoords);
             if (object.typeNumber == 0) {
-                this.robot = new Robot(this, this.scene, coords[0], coords[1]);
+                this.robot = new Robot(this, this.scene, coords[0], coords[1], object);
                 this.robot.lookingIndex = 0;
                 if (this.robot.carryingFruit)
                     this.robot.carryingFruit.destroy();
                 this.robot.isScoopDown = true;
             }
             else if (object.typeNumber >= 1 && object.typeNumber <= 4) {
-                let newFood = new Food(this, this.scene, coords[0], coords[1], object.typeNumber);
+                let newFood = new Food(this, this.scene, coords[0], coords[1], object.typeNumber, object);
                 newFood.notYetInGrid = false;
                 this.food.add(newFood);
             }
             else if (object.typeNumber >= 5 && object.typeNumber <= 12) {
-                let newBox = new Box(this, this.scene, coords[0], coords[1], object.typeNumber);
+                let newBox = new Box(this, this.scene, coords[0], coords[1], object.typeNumber, object);
                 newBox.notYetInGrid = false;
                 this.boxes.add(newBox);
             }
             else {
                 throw ("bad typenumber");
+            }
+        }
+        this.refreshFruitCounts();
+    }
+    refreshFruitCounts() {
+        this.numbers.clear(true, true);
+        let groupedByCoords = {};
+        for (let food of this.food.getChildren()) {
+            let key = this.getUniqueKeyFromXY(food);
+            if (key in groupedByCoords) {
+                groupedByCoords[key].push(food);
+            }
+            else {
+                groupedByCoords[key] = [food];
+            }
+        }
+        for (let key in groupedByCoords) {
+            if (groupedByCoords[key].length > 1) {
+                let x = groupedByCoords[key][0].x + 16;
+                let y = groupedByCoords[key][0].y + 14;
+                let newText = this.scene.add.text(x, y, groupedByCoords[key].length, {
+                    fill: "#000",
+                    fontSize: "14px",
+                    fontFamily: "Arial Black"
+                });
+                this.numbers.add(newText);
             }
         }
     }
@@ -403,6 +447,10 @@ class Grid {
         if (mapCoords)
             return this.getXYfromMapCoords(mapCoords);
         return null;
+    }
+    getUniqueKeyFromXY(item) {
+        let mapCoords = this.getMapCoordsFromXY(item.x, item.y);
+        return mapCoords[0] * 8 + mapCoords[1];
     }
     getMapCoordsFromXY(x, y) {
         let i = Math.floor((x - this.leftX) / TILE_SIZE);
@@ -438,10 +486,8 @@ class Grid {
     allowsItemToBePlaced(item, destX, destY) {
         let foodOrBoxAlreadyThere = this.getFoodOrBoxAtXY(destX, destY);
         if (foodOrBoxAlreadyThere) {
-            if (foodOrBoxAlreadyThere instanceof Box && item instanceof Food) {
-                if (!foodOrBoxAlreadyThere.containsFruit && foodOrBoxAlreadyThere.matchesFoodType(item)) {
-                    return true;
-                }
+            if (item instanceof Food && foodOrBoxAlreadyThere.foodType == item.foodType) {
+                return true;
             }
             return false;
         }
@@ -453,12 +499,41 @@ class Grid {
     checkWinCondition() {
         return this.boxes.getChildren().every(b => b.containsFruit);
     }
+    placeItem(item, destX, destY) {
+        let destItem = this.getFoodOrBoxAtXY(destX, destY);
+        if (destItem instanceof Box && item instanceof Food) {
+            destItem.acceptFruit(item);
+        }
+        else {
+            item.grid = this;
+            item.x = destX;
+            item.y = destY;
+            item.notYetInGrid = false;
+            this.getGroup(item).add(item);
+        }
+        this.refreshFruitCounts();
+    }
+    getGroup(item) {
+        if (item instanceof Food)
+            return this.food;
+        if (item instanceof Box)
+            return this.boxes;
+        if (item instanceof Floor)
+            return this.floors;
+    }
+    removeItem(item) {
+        let group = this.getGroup(item);
+        if (group)
+            group.remove(item);
+        this.refreshFruitCounts();
+    }
     destroy() {
         this.food.clear(true, true);
         this.boxes.clear(true, true);
         if (this.robot)
             this.robot.destroy();
         this.floors.clear(true, true);
+        this.numbers.clear(true, true);
     }
 }
 var helpersMaker = function () {
@@ -783,11 +858,12 @@ class Random {
 const TILE_SIZE = 64;
 const FOOD_SCALE = 0.75;
 class Robot extends GridSprite {
-    constructor(grid, scene, x, y) {
-        super(grid, scene, x, y, 1, "body", "RightLowered");
+    constructor(grid, scene, x, y, configObject) {
+        super(grid, scene, x, y, 1, "body", "RightLowered", configObject);
         this._lookingIndex = 0;
         this.isScoopDown = true;
         this.setDepth(10);
+        this.typeNumber = 0;
         this.isDragging = false;
         this.scene.input.setDraggable(this.setInteractive());
         this.on('drag', this.onDrag.bind(this));
@@ -861,7 +937,7 @@ class Robot extends GridSprite {
                 robot.isScoopDown = false;
                 robot.setFrame(Robot.lookingBodyFrames[robot.isScoopDown ? 1 : 0][robot.lookingIndex]);
                 if (fruit) {
-                    fruit.getGridGroup().remove(fruit);
+                    robot.grid.removeItem(fruit);
                     fruit.setPosition(robot.x, robot.y - Robot.carryingHeight);
                 }
                 if (paramOnCompleteTween)
@@ -893,15 +969,7 @@ class Robot extends GridSprite {
             return () => {
                 if (fruit) {
                     if (canDrop) {
-                        let box = robot.grid.getFoodOrBoxAtXY(dropCoords[0], dropCoords[1]);
-                        if (box) {
-                            box.acceptFruit(fruit);
-                        }
-                        else {
-                            fruit.setPosition(dropCoords[0], dropCoords[1]);
-                            fruit.grid = robot.grid;
-                            fruit.getGridGroup().add(fruit);
-                        }
+                        robot.grid.placeItem(fruit, dropCoords[0], dropCoords[1]);
                         robot.isScoopDown = true;
                         robot.setFrame(Robot.lookingBodyFrames[robot.isScoopDown ? 1 : 0][robot.lookingIndex]);
                     }
@@ -1054,7 +1122,9 @@ class Robot extends GridSprite {
             this.isDragging = true;
             if (this.grid && this.mapCoords) {
                 this.grid.robot = null;
-                SceneBase.instance.removeObjectFromGridConfig(this.grid, this.mapCoords);
+                if (this.configObject)
+                    this.grid.configGrid.removeObject(this.configObject);
+                this.configObject = null;
             }
             SceneBase.instance.resetButtonAction();
         }
@@ -1087,7 +1157,8 @@ class Robot extends GridSprite {
             }
             this.grid = grid;
             this.grid.robot = this;
-            SceneBase.instance.updateCurrentConfigFromSprites();
+            this.configObject = this.createConfigObject(this.grid);
+            this.grid.configGrid.addObject(this.configObject);
         }
     }
     destroy() {
@@ -1178,10 +1249,6 @@ class SceneBase extends Phaser.Scene {
         }
         return null;
     }
-    removeObjectFromGridConfig(grid, mapCoords) {
-        let gridIndex = this.grids.indexOf(grid);
-        this.currentConfig.configGrids[gridIndex].removeFood(mapCoords);
-    }
 }
 class SceneBuilder extends SceneBase {
     constructor(levelMapSpanId, codeInputId, playButtonId, resetButtonId, setWidthSliderId, setHeightSliderId, setNumGridsId, mapAsString) {
@@ -1196,9 +1263,10 @@ class SceneBuilder extends SceneBase {
         this.setNumGridsSlider.oninput = this.setNumGrids.bind(this);
         if (mapAsString && mapAsString.length > 0) {
             this.currentConfig = Config.fromBase64(mapAsString);
+            this.currentConfig.func = this.updateConfigSpan.bind(this);
         }
         else {
-            this.currentConfig = new Config([ConfigGrid.createDefaultGrid(this.setWidthSlider.value, this.setHeightSlider.value)]);
+            this.currentConfig = new Config([ConfigGrid.createDefaultGrid(this.setWidthSlider.value, this.setHeightSlider.value)], this.updateConfigSpan.bind(this));
         }
         this.levelMapAnchor.innerHTML = "solver.html?" + this.currentConfig.toBase64();
         this.levelMapAnchor.href = "solver.html?" + this.currentConfig.toBase64();
@@ -1218,26 +1286,18 @@ class SceneBuilder extends SceneBase {
     setGridWidths(event) {
         this.currentConfig.configGrids.forEach(g => g.setWidth(Number(this.setWidthSlider.value)));
         this.resetButtonAction();
-        this.updateConfigSpan();
     }
     setGridHeights(event) {
         this.currentConfig.configGrids.forEach(g => g.setHeight(Number(this.setHeightSlider.value)));
         this.resetButtonAction();
-        this.updateConfigSpan();
     }
     setNumGrids(event) {
         this.currentConfig.setNumGrids(this.setNumGridsSlider.value);
         this.resetButtonAction();
-        this.updateConfigSpan();
     }
-    updateConfigSpan() {
-        this.levelMapAnchor.innerHTML = "solver.html?" + this.currentConfig.toBase64();
-        this.levelMapAnchor.href = "solver.html?" + this.currentConfig.toBase64();
-    }
-    updateCurrentConfigFromSprites() {
-        let config = new Config(this.grids.map(g => g.getConfigGrid()));
-        this.currentConfig = config;
-        this.updateConfigSpan();
+    updateConfigSpan(value) {
+        this.levelMapAnchor.innerHTML = "solver.html?" + value;
+        this.levelMapAnchor.href = "solver.html?" + value;
     }
 }
 class SceneSolver extends SceneBase {
@@ -1253,7 +1313,7 @@ class SceneSolver extends SceneBase {
             let objects = [];
             objects.push(new ConfigObject([0, 1], 0));
             let grid1 = new ConfigGrid(3, 3, objects);
-            this.currentConfig = new Config([grid1]);
+            this.currentConfig = new Config([grid1], null);
         }
     }
     create() {

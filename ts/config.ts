@@ -1,6 +1,9 @@
+
+
 class ConfigObject {
     mapCoords: number[]; //0 - 7
     typeNumber: number;
+    howMany: number;
 
     constructor(mapCoords,typeNumber) {
         this.mapCoords = mapCoords;
@@ -29,6 +32,7 @@ class ConfigGrid {
     width: number;
     height: number;
     objects: ConfigObject[];
+    onUpdate;
 
     constructor(width,height,objects) {
         this.width = Number(width);
@@ -43,6 +47,8 @@ class ConfigGrid {
     }
 
     toBase64(): string {
+        //if robot is not present, just return blank
+        if (this.objects.find(o => o.typeNumber == 0) == undefined) return "";
         //first char is height and width up to max 8
         let ret = "";
         ret += Config.RADIX[8*(this.width-1) + this.height - 1];
@@ -71,7 +77,7 @@ class ConfigGrid {
             if (o.mapCoords[0] >= value) {
                 if (o.typeNumber == 0) { //robot 
                     o.mapCoords = [value - 1, o.mapCoords[1]];
-                    this.removeFood([value - 1, o.mapCoords[1]]);
+                    this.removeAllObjectsAtCoords([value - 1, o.mapCoords[1]]);
                 }
                 else {
                     helpers.removeFromArray(this.objects,o);
@@ -87,8 +93,8 @@ class ConfigGrid {
         let deepCopy = [...this.objects];
         for (let o of deepCopy) {
             if (o.mapCoords[1] >= value) {
-                if (o.typeNumber == 0) { //robot 
-                    this.removeFood([o.mapCoords[0], value-1]);
+                if (o.typeNumber == 0) { //robot - remove food already in the way
+                    this.removeAllObjectsAtCoords([o.mapCoords[0], value-1]);
                     o.mapCoords = [o.mapCoords[0], value-1];
                 }
                 else {
@@ -98,12 +104,22 @@ class ConfigGrid {
         }
     }
 
-    removeFood(mapCoords: number[]) {
+    removeAllObjectsAtCoords(mapCoords: number[]) {
         for (let o of this.objects) {
-            if (o.mapCoords[0] == mapCoords[0] && o.mapCoords[1] == mapCoords[1]) {
-                helpers.removeFromArray(this.objects, o);
+            if (o.mapCoords[0] == mapCoords[0] && o.mapCoords[1]== mapCoords[1]) {
+                helpers.removeFromArray(this.objects, o);                
             }
         }
+    }
+
+    removeObject(item: ConfigObject) {
+        helpers.removeFromArray(this.objects, item);
+        if (this.onUpdate) this.onUpdate();
+    }
+
+    addObject(object: ConfigObject) {
+        this.objects.push(object);
+        if (this.onUpdate) this.onUpdate();
     }
 }
 
@@ -111,9 +127,16 @@ class Config {
     static RADIX = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
     //https://en.wikipedia.org/wiki/Base64#Base64_table
     configGrids: ConfigGrid[];
+    func;
 
-    constructor(configGrids: ConfigGrid[]) {
+    constructor(configGrids: ConfigGrid[], updateFunc) {
         this.configGrids = configGrids;
+        this.func = updateFunc;
+        this.configGrids.forEach(g => g.onUpdate = this.onUpdate.bind(this));
+    }
+
+    onUpdate() {
+        if (this.func) this.func(this.toBase64());
     }
 
     setNumGrids(value) {
@@ -123,7 +146,9 @@ class Config {
             for (let i = this.configGrids.length; i < value; i++) {
                 let h = this.configGrids[0].height;
                 let w = this.configGrids[0].width;
-                this.configGrids.push(ConfigGrid.createDefaultGrid(w,h));
+                let newGrid = ConfigGrid.createDefaultGrid(w,h);
+                newGrid.onUpdate = this.onUpdate.bind(this);
+                this.configGrids.push(newGrid);
             }
         }
         else if (value < this.configGrids.length) {
@@ -134,6 +159,8 @@ class Config {
     toBase64() {
         let ret = "";
         for (let grid of this.configGrids) {
+            //if no robot then return empty
+            if (grid.objects.length == 0) return "";
             //first char is number of objects - 1 (there must be a robot)
             ret += Config.RADIX[grid.objects.length-1];
             //then add the encoded grid
@@ -153,7 +180,7 @@ class Config {
             grids.push(ConfigGrid.fromBase64(str2));
             i += numObjects*2 + 1 + 1;
         }
-        return new Config(grids);
+        return new Config(grids,null);
     }
     
 }

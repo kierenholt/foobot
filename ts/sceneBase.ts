@@ -108,10 +108,6 @@ class SceneBase extends Phaser.Scene {
         return null;
     }
 
-    removeObjectFromGridConfig(grid,mapCoords) {
-        let gridIndex = this.grids.indexOf(grid);
-        this.currentConfig.configGrids[gridIndex].removeFood(mapCoords);
-    }
 }
 
 class SceneBuilder extends SceneBase {
@@ -144,16 +140,20 @@ class SceneBuilder extends SceneBase {
 
         if (mapAsString && mapAsString.length > 0) {
             this.currentConfig = Config.fromBase64(mapAsString);
+            this.currentConfig.func = this.updateConfigSpan.bind(this);
         }
         else {
-            this.currentConfig = new Config([ConfigGrid.createDefaultGrid(this.setWidthSlider.value, this.setHeightSlider.value)]);    
+            this.currentConfig = new Config(
+                [ConfigGrid.createDefaultGrid(this.setWidthSlider.value, this.setHeightSlider.value, )],
+                this.updateConfigSpan.bind(this)
+                );    
+            
             //FOR TESTING
             //let objects2 = [];
             //objects2.push(new ConfigObject([2,2],0)); //0 = robot
             //let grid2 = new ConfigGrid(3,3,objects2);
             //this.currentConfig = new Config([grid1,grid2]);
         }
-
 
         this.levelMapAnchor.innerHTML = "solver.html?" + this.currentConfig.toBase64();
         this.levelMapAnchor.href = "solver.html?" + this.currentConfig.toBase64();
@@ -180,31 +180,23 @@ class SceneBuilder extends SceneBase {
     setGridWidths(event) {
         this.currentConfig.configGrids.forEach(g => g.setWidth(Number(this.setWidthSlider.value)));
         this.resetButtonAction();
-        this.updateConfigSpan();
     }
 
     setGridHeights(event) {
         this.currentConfig.configGrids.forEach(g => g.setHeight(Number(this.setHeightSlider.value)));
         this.resetButtonAction();
-        this.updateConfigSpan();
     }
 
     setNumGrids(event) {
         this.currentConfig.setNumGrids(this.setNumGridsSlider.value);
         this.resetButtonAction();
-        this.updateConfigSpan();
     }
 
-    updateConfigSpan() {
-        this.levelMapAnchor.innerHTML = "solver.html?" + this.currentConfig.toBase64();
-        this.levelMapAnchor.href = "solver.html?" + this.currentConfig.toBase64();
+    updateConfigSpan(value) {
+        this.levelMapAnchor.innerHTML = "solver.html?" + value;
+        this.levelMapAnchor.href = "solver.html?" + value;
     }
 
-    updateCurrentConfigFromSprites() {
-        let config = new Config(this.grids.map(g => g.getConfigGrid()));
-        this.currentConfig = config; 
-        this.updateConfigSpan();
-    }
 }
 
 class SceneSolver extends SceneBase {
@@ -231,7 +223,7 @@ class SceneSolver extends SceneBase {
             let objects = [];
             objects.push(new ConfigObject([0,1],0)); //0 = robot
             let grid1 = new ConfigGrid(3,3,objects);
-            this.currentConfig = new Config([grid1]);    
+            this.currentConfig = new Config([grid1],null);
             //FOR TESTING
             //let objects2 = [];
             //objects2.push(new ConfigObject([2,2],0)); //0 = robot
