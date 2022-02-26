@@ -205,7 +205,7 @@ class Grid  {
     }
 
     checkWinCondition() {
-        return (this.boxes.getChildren() as Box[]).every(b => b.containsFruit);
+        return (this.food.getLength() == 0 && this.robot.carryingFruit == null);
     }
 
     placeItem(item, destX, destY) {

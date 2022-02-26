@@ -72,7 +72,7 @@ class SceneBase extends Phaser.Scene {
             if (this instanceof SceneSolver) this.checkWinCondition();
         }
     }
-
+ 
     setAllRobotsIncomplete() {
         this.gridIsCompletedByIndex = this.robots.map(r => false);
     }
