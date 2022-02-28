@@ -11,6 +11,7 @@ class SceneBase extends Phaser.Scene {
     codeInput: HTMLTextAreaElement;
     playButton: HTMLImageElement;
     resetButton: HTMLImageElement;
+    fastPlayButton: HTMLImageElement;
 
     currentConfig: Config;
     static builderMode: boolean;
@@ -18,7 +19,8 @@ class SceneBase extends Phaser.Scene {
     constructor(
         codeInputId, 
         playButtonId, 
-        resetButtonId) {
+        resetButtonId, 
+        fastPlayButtonId) {
         super({
             key: 'sceneA',
             active: true,
@@ -34,9 +36,13 @@ class SceneBase extends Phaser.Scene {
         SceneBase.instance = this;
         this.codeInput = document.getElementById(codeInputId) as HTMLTextAreaElement;
         this.playButton = document.getElementById(playButtonId) as HTMLImageElement;
+        this.playButton.onclick = this.runCodeOnAllRobots.bind(this,[1]);
+        
         this.resetButton = document.getElementById(resetButtonId) as HTMLImageElement;
-        this.playButton.onclick = this.runCodeOnAllRobots.bind(this);
         this.resetButton.onclick = this.resetButtonAction.bind(this);
+
+        this.fastPlayButton = document.getElementById(fastPlayButtonId) as HTMLImageElement;
+        this.fastPlayButton.onclick = this.runCodeOnAllRobots.bind(this,[5]);
 
     }
 
@@ -56,11 +62,11 @@ class SceneBase extends Phaser.Scene {
         return this.grids.map(g => g.robot);
     }
 
-    runCodeOnAllRobots() {
+    runCodeOnAllRobots(playSpeed) {
         this.resetButtonAction();
         let code = this.codeInput.value;
         for (let robot of this.robots) {
-            robot.runCode(code,this.setRobotCompleted.bind(this));
+            robot.runCode(code,this.setRobotCompleted.bind(this),playSpeed);
         }
     }
 
@@ -123,10 +129,12 @@ class SceneBuilder extends SceneBase {
         setWidthSliderId,
         setHeightSliderId,
         setNumGridsId,
-        mapAsString) {
+        mapAsString,
+        fastPlayButtonId) {
         super(codeInputId, 
             playButtonId, 
-            resetButtonId);
+            resetButtonId,
+            fastPlayButtonId);
 
         SceneBase.builderMode = true;
 
@@ -205,11 +213,13 @@ class SceneSolver extends SceneBase {
     constructor(codeInputId, 
         playButtonId, 
         resetButtonId,
-        mapAsString) {
+        mapAsString,
+        fastPlayButtonId) {
         super(
             codeInputId, 
             playButtonId, 
-            resetButtonId
+            resetButtonId,
+            fastPlayButtonId
             );
 
         SceneBase.builderMode = false;

@@ -300,7 +300,7 @@ Config.RADIX = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_
 const GAME_WIDTH = 700;
 const GAME_HEIGHT = 300;
 class fooBotBuilder extends Phaser.Game {
-    constructor(levelMapInputId, parentId, codeInputId, playButtonId, resetButtonId, setWidthSliderId, setHeightSliderId, setNumGridsId) {
+    constructor(levelMapInputId, parentId, codeInputId, playButtonId, resetButtonId, setWidthSliderId, setHeightSliderId, setNumGridsId, fastPlayButtonId) {
         let config = {
             type: Phaser.AUTO,
             width: GAME_WIDTH,
@@ -319,13 +319,13 @@ class fooBotBuilder extends Phaser.Game {
                     height: GAME_HEIGHT
                 }
             },
-            scene: [new SceneBuilder(levelMapInputId, codeInputId, playButtonId, resetButtonId, setWidthSliderId, setHeightSliderId, setNumGridsId, window.location.search.substring(1))]
+            scene: [new SceneBuilder(levelMapInputId, codeInputId, playButtonId, resetButtonId, setWidthSliderId, setHeightSliderId, setNumGridsId, window.location.search.substring(1), fastPlayButtonId)]
         };
         super(config);
     }
 }
 class fooBotSolver extends Phaser.Game {
-    constructor(parentId, codeInputId, playButtonId, resetButtonId) {
+    constructor(parentId, codeInputId, playButtonId, resetButtonId, fastPlayButtonId) {
         let config = {
             type: Phaser.AUTO,
             width: GAME_WIDTH,
@@ -339,7 +339,7 @@ class fooBotSolver extends Phaser.Game {
             physics: {
                 default: 'arcade'
             },
-            scene: [new SceneSolver(codeInputId, playButtonId, resetButtonId, window.location.search.substring(1))]
+            scene: [new SceneSolver(codeInputId, playButtonId, resetButtonId, window.location.search.substring(1), fastPlayButtonId)]
         };
         super(config);
     }
@@ -1020,9 +1020,11 @@ class Robot extends GridSprite {
     get isLookingDown() { return this.lookingIndex == 1; }
     get lookingFruitNotBox() {
         let lookingCoords = this.lookingXY;
-        let found = this.grid.getFoodOrBoxAtXY(lookingCoords[0], lookingCoords[1]);
-        if (found instanceof Food)
-            return found;
+        if (lookingCoords) {
+            let found = this.grid.getFoodOrBoxAtXY(lookingCoords[0], lookingCoords[1]);
+            if (found instanceof Food)
+                return found;
+        }
         return null;
     }
     getMoveTowardsFruitTween() {
@@ -1057,8 +1059,9 @@ class Robot extends GridSprite {
             duration: Robot.duration, ease: Robot.ease, repeat: 0, yoyo: false, paused: false
         });
     }
-    runCode(myCode, onComplete) {
+    runCode(myCode, onComplete, playSpeed) {
         var robot = this;
+        Robot.duration = 1000 / playSpeed;
         var initFunc = (interpreter, globalObject) => {
             var aheadWrapper = function (repeats) {
                 robot.moving = true;
@@ -1178,7 +1181,7 @@ Robot.carryingHeight = 32;
 const GRID_LEFT = 192;
 const GRID_TOP = 32;
 class SceneBase extends Phaser.Scene {
-    constructor(codeInputId, playButtonId, resetButtonId) {
+    constructor(codeInputId, playButtonId, resetButtonId, fastPlayButtonId) {
         super({
             key: 'sceneA',
             active: true,
@@ -1194,9 +1197,11 @@ class SceneBase extends Phaser.Scene {
         SceneBase.instance = this;
         this.codeInput = document.getElementById(codeInputId);
         this.playButton = document.getElementById(playButtonId);
+        this.playButton.onclick = this.runCodeOnAllRobots.bind(this, [1]);
         this.resetButton = document.getElementById(resetButtonId);
-        this.playButton.onclick = this.runCodeOnAllRobots.bind(this);
         this.resetButton.onclick = this.resetButtonAction.bind(this);
+        this.fastPlayButton = document.getElementById(fastPlayButtonId);
+        this.fastPlayButton.onclick = this.runCodeOnAllRobots.bind(this, [5]);
     }
     preload() {
         this.load.atlas("body", "assets/foobotSpriteSheet.png", "assets/foobotSpriteSheet.json");
@@ -1209,11 +1214,11 @@ class SceneBase extends Phaser.Scene {
     get robots() {
         return this.grids.map(g => g.robot);
     }
-    runCodeOnAllRobots() {
+    runCodeOnAllRobots(playSpeed) {
         this.resetButtonAction();
         let code = this.codeInput.value;
         for (let robot of this.robots) {
-            robot.runCode(code, this.setRobotCompleted.bind(this));
+            robot.runCode(code, this.setRobotCompleted.bind(this), playSpeed);
         }
     }
     setRobotCompleted(robot) {
@@ -1251,8 +1256,8 @@ class SceneBase extends Phaser.Scene {
     }
 }
 class SceneBuilder extends SceneBase {
-    constructor(levelMapSpanId, codeInputId, playButtonId, resetButtonId, setWidthSliderId, setHeightSliderId, setNumGridsId, mapAsString) {
-        super(codeInputId, playButtonId, resetButtonId);
+    constructor(levelMapSpanId, codeInputId, playButtonId, resetButtonId, setWidthSliderId, setHeightSliderId, setNumGridsId, mapAsString, fastPlayButtonId) {
+        super(codeInputId, playButtonId, resetButtonId, fastPlayButtonId);
         SceneBase.builderMode = true;
         this.levelMapAnchor = document.getElementById(levelMapSpanId);
         this.setWidthSlider = document.getElementById(setWidthSliderId);
@@ -1301,8 +1306,8 @@ class SceneBuilder extends SceneBase {
     }
 }
 class SceneSolver extends SceneBase {
-    constructor(codeInputId, playButtonId, resetButtonId, mapAsString) {
-        super(codeInputId, playButtonId, resetButtonId);
+    constructor(codeInputId, playButtonId, resetButtonId, mapAsString, fastPlayButtonId) {
+        super(codeInputId, playButtonId, resetButtonId, fastPlayButtonId);
         SceneBase.builderMode = false;
         this.currentConfig = Config.fromBase64(mapAsString);
         this.firstMapAsString = mapAsString;

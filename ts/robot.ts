@@ -219,8 +219,10 @@ class Robot extends GridSprite {
 
   get lookingFruitNotBox(): Food {
     let lookingCoords = this.lookingXY;
-    let found = this.grid.getFoodOrBoxAtXY(lookingCoords[0], lookingCoords[1]);
-    if (found instanceof Food) return found;
+    if (lookingCoords) {
+      let found = this.grid.getFoodOrBoxAtXY(lookingCoords[0], lookingCoords[1]);
+      if (found instanceof Food) return found;
+    }
     return null;
   }
 
@@ -257,8 +259,9 @@ class Robot extends GridSprite {
     });
   }
 
-  runCode(myCode, onComplete) {
+  runCode(myCode, onComplete, playSpeed) {
     var robot = this;
+    Robot.duration = 1000 / playSpeed;
     var initFunc = (interpreter, globalObject) => {
 
       var aheadWrapper = function (repeats) {

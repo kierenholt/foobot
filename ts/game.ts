@@ -11,7 +11,8 @@ class fooBotBuilder extends Phaser.Game {
     resetButtonId,
     setWidthSliderId,
     setHeightSliderId,
-    setNumGridsId) {
+    setNumGridsId,
+    fastPlayButtonId) {
 
     let config = { 
     
@@ -44,7 +45,8 @@ class fooBotBuilder extends Phaser.Game {
         setWidthSliderId,
         setHeightSliderId,
         setNumGridsId,
-        window.location.search.substring(1)) ]
+        window.location.search.substring(1),
+        fastPlayButtonId) ]
     };
     super(config);
   }
@@ -57,7 +59,8 @@ class fooBotSolver extends Phaser.Game {
     parentId,
     codeInputId,
     playButtonId,
-    resetButtonId) {
+    resetButtonId,
+    fastPlayButtonId) {
 
     let config = { 
     
@@ -81,7 +84,8 @@ class fooBotSolver extends Phaser.Game {
         codeInputId,
         playButtonId,
         resetButtonId,
-        window.location.search.substring(1)) ]
+        window.location.search.substring(1),
+        fastPlayButtonId) ]
     };
     super(config);
   }
