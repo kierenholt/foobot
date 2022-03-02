@@ -148,7 +148,7 @@ class SceneBuilder extends SceneBase {
 
         if (mapAsString && mapAsString.length > 0) {
             this.currentConfig = Config.fromBase64(mapAsString);
-            this.currentConfig.func = this.updateConfigSpan.bind(this);
+            this.currentConfig.func = this.updateConfigSpan.bind(this); //update event
         }
         else {
             this.currentConfig = new Config(
@@ -182,6 +182,10 @@ class SceneBuilder extends SceneBase {
         this.add.existing(new Box(null,this,96,32+64+64+64,8)); 
 
         this.resetButtonAction();
+
+        this.setHeightSlider.value = this.currentConfig.configGrids[0].height.toString();
+        this.setWidthSlider.value = this.currentConfig.configGrids[0].width.toString();
+        this.setNumGridsSlider.value = this.currentConfig.configGrids.length.toString();
     }
 
 

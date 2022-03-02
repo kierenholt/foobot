@@ -84,6 +84,7 @@ class ConfigGrid {
                 }
             }
         }
+        if (this.onUpdate) this.onUpdate(); //update the link text
     }
 
 
@@ -102,6 +103,7 @@ class ConfigGrid {
                 }
             }
         }
+        if (this.onUpdate) this.onUpdate(); //update the link text
     }
 
     removeAllObjectsAtCoords(mapCoords: number[]) {
@@ -119,7 +121,7 @@ class ConfigGrid {
 
     addObject(object: ConfigObject) {
         this.objects.push(object);
-        if (this.onUpdate) this.onUpdate();
+        if (this.onUpdate) this.onUpdate(); //update the link text
     }
 }
 
@@ -154,6 +156,7 @@ class Config {
         else if (value < this.configGrids.length) {
             this.configGrids = this.configGrids.slice(0, value);
         }
+        if (this.func) this.func(this.toBase64()); //updates the link text
     }
 
     toBase64() {

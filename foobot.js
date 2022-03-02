@@ -211,6 +211,8 @@ class ConfigGrid {
                 }
             }
         }
+        if (this.onUpdate)
+            this.onUpdate();
     }
     setHeight(value) {
         this.height = Number(value);
@@ -226,6 +228,8 @@ class ConfigGrid {
                 }
             }
         }
+        if (this.onUpdate)
+            this.onUpdate();
     }
     removeAllObjectsAtCoords(mapCoords) {
         for (let o of this.objects) {
@@ -273,6 +277,8 @@ class Config {
         else if (value < this.configGrids.length) {
             this.configGrids = this.configGrids.slice(0, value);
         }
+        if (this.func)
+            this.func(this.toBase64());
     }
     toBase64() {
         let ret = "";
@@ -1287,6 +1293,9 @@ class SceneBuilder extends SceneBase {
         this.add.existing(new Box(null, this, 96, 32 + 64 + 64, 7));
         this.add.existing(new Box(null, this, 96, 32 + 64 + 64 + 64, 8));
         this.resetButtonAction();
+        this.setHeightSlider.value = this.currentConfig.configGrids[0].height.toString();
+        this.setWidthSlider.value = this.currentConfig.configGrids[0].width.toString();
+        this.setNumGridsSlider.value = this.currentConfig.configGrids.length.toString();
     }
     setGridWidths(event) {
         this.currentConfig.configGrids.forEach(g => g.setWidth(Number(this.setWidthSlider.value)));
