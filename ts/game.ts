@@ -4,15 +4,12 @@ const GAME_HEIGHT = 300;
 
 class fooBotBuilder extends Phaser.Game {
 
-  constructor(levelMapInputId,
-    parentId,
+  constructor(parentId,
     codeInputId,
     playButtonId,
     resetButtonId,
-    setWidthSliderId,
-    setHeightSliderId,
-    setNumGridsId,
-    fastPlayButtonId) {
+    fastPlayButtonId,
+    configObject) {
 
     let config = { 
     
@@ -38,15 +35,11 @@ class fooBotBuilder extends Phaser.Game {
         }
       },
 
-      scene   : [ new SceneBuilder(levelMapInputId, 
-        codeInputId,
+      scene   : [ new SceneBuilder(codeInputId,
         playButtonId,
         resetButtonId,
-        setWidthSliderId,
-        setHeightSliderId,
-        setNumGridsId,
-        window.location.search.substring(1),
-        fastPlayButtonId) ]
+        fastPlayButtonId,
+        configObject) ]
     };
     super(config);
   }
@@ -55,12 +48,12 @@ class fooBotBuilder extends Phaser.Game {
 
 class fooBotSolver extends Phaser.Game {
 
-  constructor(
-    parentId,
+  constructor(parentId,
     codeInputId,
     playButtonId,
     resetButtonId,
-    fastPlayButtonId) {
+    fastPlayButtonId,
+    configObject) {
 
     let config = { 
     
@@ -80,12 +73,11 @@ class fooBotSolver extends Phaser.Game {
           default: 'arcade'
       },
 
-      scene   : [ new SceneSolver(
-        codeInputId,
+      scene   : [ new SceneSolver(codeInputId,
         playButtonId,
         resetButtonId,
-        window.location.search.substring(1),
-        fastPlayButtonId) ]
+        fastPlayButtonId,
+        configObject) ]
     };
     super(config);
   }

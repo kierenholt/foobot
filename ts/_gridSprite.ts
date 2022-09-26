@@ -19,8 +19,10 @@ const mapTextureCodes = [
   "bananaBox-tick" ,//= 10
   "cherryBox-tick" ,//= 11
   "dragonballBox-tick" ,//= 12
-  
+
   "spikes" //
+
+    //word-count-constraint 32
 ];
 
 class GridSprite extends Phaser.GameObjects.Sprite {

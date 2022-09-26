@@ -1,5 +1,4 @@
 
-
 class ConfigObject {
     mapCoords: number[]; //0 - 7
     typeNumber: number;
@@ -34,7 +33,7 @@ class ConfigGrid {
     objects: ConfigObject[];
     onUpdate;
 
-    constructor(width,height,objects) {
+    constructor(width, height, objects) {
         this.width = Number(width);
         this.height = Number(height);
         this.objects = objects;
@@ -64,6 +63,7 @@ class ConfigGrid {
         //objects in pairs of chars
         let objects = [];
         for (let i = 1; i < str.length; i+=2) {
+            let typeNumber = Config.RADIX.indexOf(str[i+1]);
             objects.push(ConfigObject.fromBase64(str.substring(i,i+2)));
         }
         return new ConfigGrid(width,height,objects);
@@ -127,20 +127,49 @@ class ConfigGrid {
 
 class Config {
     static RADIX = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
+    static DELIMITER = "+";
     //https://en.wikipedia.org/wiki/Base64#Base64_table
     configGrids: ConfigGrid[];
-    func;
+    charLimitUnmultiplied: number;
+    levelMapAnchor: HTMLAnchorElement;
+    resetGame: any;
 
-    constructor(configGrids: ConfigGrid[], updateFunc) {
+    constructor(configGrids: ConfigGrid[], 
+            charLimitUnmultiplied,
+            levelMapAnchorId) {
         this.configGrids = configGrids;
-        this.func = updateFunc;
-        this.configGrids.forEach(g => g.onUpdate = this.onUpdate.bind(this));
+        this.configGrids.forEach(g => g.onUpdate = this.updateConfigSpan.bind(this));
+        this.charLimitUnmultiplied = charLimitUnmultiplied;
+        this.levelMapAnchor = document.getElementById(levelMapAnchorId) as HTMLAnchorElement;
     }
 
-    onUpdate() {
-        if (this.func) this.func(this.toBase64());
+    static createDefault(levelMapAnchorId) {
+        return new Config(
+            [ConfigGrid.createDefaultGrid(3, 3)],
+            0,
+            levelMapAnchorId
+        );
     }
 
+
+    updateConfigSpan() {
+        let base64 = this.toBase64(); 
+        this.levelMapAnchor.innerHTML = "solver.html?" + base64;
+        this.levelMapAnchor.href = "solver.html?" + base64;
+        if (this.resetGame) this.resetGame();
+    }
+
+    get charLimit() {
+        return this.charLimitUnmultiplied*10;
+    }
+    
+    setCharLimit(value) {
+        this.charLimitUnmultiplied = Math.floor(value/10);
+        let base64 = this.toBase64(); 
+        this.levelMapAnchor.innerHTML = "solver.html?" + base64;
+        this.levelMapAnchor.href = "solver.html?" + base64;
+    }
+    
     setNumGrids(value) {
         value = Number(value);
         if (value < 1) {return};
@@ -149,14 +178,14 @@ class Config {
                 let h = this.configGrids[0].height;
                 let w = this.configGrids[0].width;
                 let newGrid = ConfigGrid.createDefaultGrid(w,h);
-                newGrid.onUpdate = this.onUpdate.bind(this);
+                newGrid.onUpdate = this.updateConfigSpan.bind(this);
                 this.configGrids.push(newGrid);
             }
         }
         else if (value < this.configGrids.length) {
             this.configGrids = this.configGrids.slice(0, value);
         }
-        if (this.func) this.func(this.toBase64()); //updates the link text
+        this.updateConfigSpan(); //updates the link text
     }
 
     toBase64() {
@@ -169,21 +198,35 @@ class Config {
             //then add the encoded grid
             ret += grid.toBase64();
         }
+        //for each constraint, 2 chars
+        if (this.charLimitUnmultiplied > 0) {
+            ret += Config.DELIMITER;
+            ret += Config.RADIX[this.charLimitUnmultiplied];
+        }
         return ret;
     }
 
-    static fromBase64(str) {
-        let grids = []; 
+    static fromBase64(str,levelMapAnchorId) {
+        let grids = [];
+        let charLimit = 0; 
         let i = 0;
         while (i < str.length) {
-            //first char is number of objects -1
-            let numObjects = Config.RADIX.indexOf(str[i]) +1;
-            //heightwidth is 1 char + each object is 2 chars
-            let str2 = str.substring(i+1,i+1+numObjects*2+1);
-            grids.push(ConfigGrid.fromBase64(str2));
-            i += numObjects*2 + 1 + 1;
+            if (str[i] != Config.DELIMITER) {
+                //first char is number of objects -1
+                let numObjects = Config.RADIX.indexOf(str[i]) +1;
+                //heightwidth is 1 char + each object is 2 chars
+                let str2 = str.substring(i+1,i+1+numObjects*2+1);
+                grids.push(ConfigGrid.fromBase64(str2));
+                i += numObjects*2 + 1 + 1;
+            }
+            else {
+                i++;
+                //constraints at the end
+                charLimit = Config.RADIX.indexOf(str[i]);
+                i++;
+            }
         }
-        return new Config(grids,null);
+        return new Config(grids,charLimit,levelMapAnchorId);
     }
     
 }

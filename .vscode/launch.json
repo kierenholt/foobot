@@ -9,7 +9,7 @@
             "type": "chrome",
             "request": "attach",
             "port": 9222,
-            "url": "http://0.0.0.0:8000/builder.html",
+            "url": "0.0.0.0:8000/builder.html",
             "webRoot": "${workspaceFolder}"
         },
         {
@@ -17,7 +17,7 @@
             "type": "chrome",
             "request": "attach",
             "port": 9222,
-            "url": "http://0.0.0.0:8000/solver.html",
+            "url": "0.0.0.0:8000/solver.html",
             "webRoot": "${workspaceFolder}"
         }
     ]

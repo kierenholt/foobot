@@ -20,7 +20,8 @@ class SceneBase extends Phaser.Scene {
         codeInputId, 
         playButtonId, 
         resetButtonId, 
-        fastPlayButtonId) {
+        fastPlayButtonId,
+        config: Config) {
         super({
             key: 'sceneA',
             active: true,
@@ -44,6 +45,7 @@ class SceneBase extends Phaser.Scene {
         this.fastPlayButton = document.getElementById(fastPlayButtonId) as HTMLImageElement;
         this.fastPlayButton.onclick = this.runCodeOnAllRobots.bind(this,[5]);
 
+        this.currentConfig = config;
     }
 
     preload() {
@@ -117,59 +119,24 @@ class SceneBase extends Phaser.Scene {
 }
 
 class SceneBuilder extends SceneBase {
-    levelMapAnchor: HTMLAnchorElement;
-    setWidthSlider: HTMLInputElement;
-    setHeightSlider: HTMLInputElement;
-    setNumGridsSlider: HTMLInputElement;
     
-    constructor(levelMapSpanId, 
-        codeInputId, 
+    constructor(codeInputId, 
         playButtonId, 
         resetButtonId,
-        setWidthSliderId,
-        setHeightSliderId,
-        setNumGridsId,
-        mapAsString,
-        fastPlayButtonId) {
+        fastPlayButtonId,
+        config: Config) {
         super(codeInputId, 
             playButtonId, 
             resetButtonId,
-            fastPlayButtonId);
+            fastPlayButtonId,
+            config);
 
         SceneBase.builderMode = true;
-
-        this.levelMapAnchor = document.getElementById(levelMapSpanId) as HTMLAnchorElement;
-        this.setWidthSlider = document.getElementById(setWidthSliderId) as HTMLInputElement;
-        this.setWidthSlider.oninput = this.setGridWidths.bind(this);
-        this.setHeightSlider = document.getElementById(setHeightSliderId) as HTMLInputElement;
-        this.setHeightSlider.oninput = this.setGridHeights.bind(this);
-        this.setNumGridsSlider = document.getElementById(setNumGridsId) as HTMLInputElement;
-        this.setNumGridsSlider.oninput = this.setNumGrids.bind(this);
-
-        if (mapAsString && mapAsString.length > 0) {
-            this.currentConfig = Config.fromBase64(mapAsString);
-            this.currentConfig.func = this.updateConfigSpan.bind(this); //update event
-        }
-        else {
-            this.currentConfig = new Config(
-                [ConfigGrid.createDefaultGrid(this.setWidthSlider.value, this.setHeightSlider.value, )],
-                this.updateConfigSpan.bind(this)
-                );    
-            
-            //FOR TESTING
-            //let objects2 = [];
-            //objects2.push(new ConfigObject([2,2],0)); //0 = robot
-            //let grid2 = new ConfigGrid(3,3,objects2);
-            //this.currentConfig = new Config([grid1,grid2]);
-        }
-
-        this.levelMapAnchor.innerHTML = "solver.html?" + this.currentConfig.toBase64();
-        this.levelMapAnchor.href = "solver.html?" + this.currentConfig.toBase64();
+        config.resetGame = this.resetButtonAction.bind(this);
     }
 
     create() {
         super.create();
-
 
         this.add.existing(new Food(null,this,32,32,1));
         this.add.existing(new Food(null,this,32,32+64,2));
@@ -183,32 +150,11 @@ class SceneBuilder extends SceneBase {
 
         this.resetButtonAction();
 
-        this.setHeightSlider.value = this.currentConfig.configGrids[0].height.toString();
+/*        this.setHeightSlider.value = this.currentConfig.configGrids[0].height.toString();
         this.setWidthSlider.value = this.currentConfig.configGrids[0].width.toString();
         this.setNumGridsSlider.value = this.currentConfig.configGrids.length.toString();
+        */
     }
-
-
-    setGridWidths(event) {
-        this.currentConfig.configGrids.forEach(g => g.setWidth(Number(this.setWidthSlider.value)));
-        this.resetButtonAction();
-    }
-
-    setGridHeights(event) {
-        this.currentConfig.configGrids.forEach(g => g.setHeight(Number(this.setHeightSlider.value)));
-        this.resetButtonAction();
-    }
-
-    setNumGrids(event) {
-        this.currentConfig.setNumGrids(this.setNumGridsSlider.value);
-        this.resetButtonAction();
-    }
-
-    updateConfigSpan(value) {
-        this.levelMapAnchor.innerHTML = "solver.html?" + value;
-        this.levelMapAnchor.href = "solver.html?" + value;
-    }
-
 }
 
 class SceneSolver extends SceneBase {
@@ -217,39 +163,21 @@ class SceneSolver extends SceneBase {
     constructor(codeInputId, 
         playButtonId, 
         resetButtonId,
-        mapAsString,
-        fastPlayButtonId) {
-        super(
-            codeInputId, 
+        fastPlayButtonId, 
+        config: Config) {
+        super(codeInputId, 
             playButtonId, 
             resetButtonId,
-            fastPlayButtonId
+            fastPlayButtonId,
+            config
             );
-
         SceneBase.builderMode = false;
-        this.currentConfig = Config.fromBase64(mapAsString);
-        this.firstMapAsString = mapAsString;
-
-        if (mapAsString && mapAsString.length > 0) {
-            this.currentConfig = Config.fromBase64(mapAsString);
-        }
-        else {
-            let objects = [];
-            objects.push(new ConfigObject([0,1],0)); //0 = robot
-            let grid1 = new ConfigGrid(3,3,objects);
-            this.currentConfig = new Config([grid1],null);
-            //FOR TESTING
-            //let objects2 = [];
-            //objects2.push(new ConfigObject([2,2],0)); //0 = robot
-            //let grid2 = new ConfigGrid(3,3,objects2);
-            //this.currentConfig = new Config([grid1,grid2]);
-        }
+        this.firstMapAsString = config.toBase64();
     }
 
     create() {
         super.create();
         this.resetButtonAction();
-
     }
 
     checkWinCondition() {

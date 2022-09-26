@@ -21,11 +21,13 @@
 <div id="settings">    
     
   <p>width</p>
-  <input class="slider" id="setWidthSlider" type="range" step="1" min="1" max="8" value="3"></input>
+  <input class="slider" id="setWidthSlider" type="range" step="1" min="1" max="8" value="1"></input>
   <p>height</p>
-  <input class="slider" id="setHeightSlider" type="range" step="1" min="1" max="8" value="3"></input>
+  <input class="slider" id="setHeightSlider" type="range" step="1" min="1" max="8" value="1"></input>
   <p>no. grids</p>
   <input class="slider" id="setNumGridsSlider" type="range" step="1" min="1" max="4" value="1"></input>
+  <p>char limit <span id="charLimitDescription">OFF</span></p>
+  <input class="slider" id="setCharLimitSlider" type="range" step="10" min="0" max="630" value="0"></input>
 
 </div>
 
@@ -33,6 +35,8 @@
 <div id="buttons">
   <div id="left">
     <textarea id="codeInput">ahead();</textarea>
+    <p><span id="characterCountSpan">#</span>&nbsp;characters</p>
+    <p><a target="_blank" href="help.html">Click here for help</a></p>
   </div>
   <div id="right">
     <img id="playButton" src="assets/play.png" title="play"></img>
@@ -45,19 +49,66 @@
   <script>
 
     function ready() {
+      document.getElementById("levelMapSpan").href = "solver.html" + window.location.search;
+      document.getElementById("levelMapSpan").innerHTML = "solver.html" + window.location.search;      
 
+      let setWidthSlider = document.getElementById("setWidthSlider");
+      let setHeightSlider = document.getElementById("setHeightSlider");
+      let setNumGridsSlider = document.getElementById("setNumGridsSlider");
+      let setCharLimitSlider = document.getElementById("setCharLimitSlider");
+      let characterCountSpan = document.getElementById("characterCountSpan");
+      let codeInput = document.getElementById("codeInput");
 
+      let mapAsString = window.location.search.substring(1);
+      let config = null;
+      
+      if (mapAsString && mapAsString.length > 0) { //from mapstring
+            config = Config.fromBase64(mapAsString,"levelMapSpan");
+            config.updateConfigSpan();
+        }
+        else { //no mapstring
+            config = Config.createDefault("levelMapSpan");
+            config.updateConfigSpan();
+        }
+        
+        setWidthSlider.value = config.configGrids[0].width;
+        setHeightSlider.value = config.configGrids[0].height;
+        setNumGridsSlider.value = config.configGrids.length;
+        setCharLimitSlider.value = config.charLimit;
+
+        setWidthSlider.oninput = (event) => {
+          config.configGrids.forEach(g => g.setWidth(Number(this.setWidthSlider.value)));
+        };
+
+        setHeightSlider.oninput = (event) => {
+          config.configGrids.forEach(g => g.setHeight(Number(this.setHeightSlider.value)));
+        }
+        
+        setNumGridsSlider.oninput = (event) => {
+          config.setNumGrids(this.setNumGridsSlider.value);
+        }
+
+        setCharLimitSlider.oninput = (e) => {
+          let value = document.getElementById("setCharLimitSlider").value;
+          document.getElementById("charLimitDescription").innerText = value == 0 ? "OFF" : value;
+          config.setCharLimit(value);
+        }
+        let value = document.getElementById("setCharLimitSlider").value;
+        document.getElementById("charLimitDescription").innerText = value == 0 ? "OFF" : value;
+
+        codeInput.oninput = (e) => {
+          characterCountSpan.innerText = codeInput.value.length;
+        }
+        characterCountSpan.innerText = codeInput.value.length;
+
+    
       //game last
-      var game = new fooBotBuilder("levelMapSpan",
-        "gameDiv",
+      var game = new fooBotBuilder("gameDiv",
         "codeInput",
         "playButton",
         "resetButton",
-        "setWidthSlider",
-        "setHeightSlider",
-        "setNumGridsSlider",
-        "fastPlayButton");
-      
+        "fastPlayButton",
+        config);
     }
     
     
