@@ -42,7 +42,7 @@ class Robot extends GridSprite {
   }
 
   ahead(onComplete, repeats) {
-    if (this.lookingXY == null) {
+    if (repeats < 1 || this.lookingXY == null) {
       if (onComplete) onComplete();
       return;
     }
@@ -57,7 +57,7 @@ class Robot extends GridSprite {
   }
 
   back(onComplete, repeats) {
-    if (this.lookingBehindXY == null) {
+    if (repeats < 1 || this.lookingBehindXY == null) {
       if (onComplete) onComplete();
       return;
     }
@@ -99,7 +99,7 @@ class Robot extends GridSprite {
     let fruit = this.lookingFruitNotBox;
     setTimeout(onComplete, Robot.duration / 2);
     if (fruit) return fruit.letterForPeek;
-    return null;
+    return "";
   }
 
 
@@ -219,8 +219,10 @@ class Robot extends GridSprite {
 
   get lookingFruitNotBox(): Food {
     let lookingCoords = this.lookingXY;
-    let found = this.grid.getFoodOrBoxAtXY(lookingCoords[0], lookingCoords[1]);
-    if (found instanceof Food) return found;
+    if (lookingCoords) {
+      let found = this.grid.getFoodOrBoxAtXY(lookingCoords[0], lookingCoords[1]);
+      if (found instanceof Food) return found;
+    }
     return null;
   }
 
@@ -257,8 +259,9 @@ class Robot extends GridSprite {
     });
   }
 
-  runCode(myCode, onComplete) {
+  runCode(myCode, onComplete, playSpeed) {
     var robot = this;
+    Robot.duration = 1000 / playSpeed;
     var initFunc = (interpreter, globalObject) => {
 
       var aheadWrapper = function (repeats) {
@@ -380,7 +383,7 @@ class Robot extends GridSprite {
       this.grid = grid;
       this.grid.robot = this;
       this.configObject = this.createConfigObject(this.grid);
-      this.grid.configGrid.addObject(this.configObject)
+      this.grid.configGrid.addObject(this.configObject);
     }
   }
 

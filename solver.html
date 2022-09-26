@@ -23,10 +23,13 @@
 
   <div id="left">
     <textarea id="codeInput">ahead();</textarea>
+    <p><span id="characterCountSpan">#</span>&nbsp;characters. Limit <span id="characterLimitSpan">#</span></p>
+    <p><a target="_blank" href="help.html">Click here for help</a></p>
   </div>
   
   <div id="right">
     <img id="playButton" src="assets/play.png" title="play"></img>
+    <img id="fastPlayButton" src="assets/fastplay.png" title="fastplay"></img>
     <img id="resetButton" src="assets/reset-small.png" title="reset"></img>
     <span id="timerSpan"></span>
   </div>
@@ -41,12 +44,44 @@
       document.getElementById("levelMapSpan").href = "builder.html" + window.location.search;
       document.getElementById("levelMapSpan").innerHTML = "builder.html" + window.location.search;      
 
+      let characterCountSpan = document.getElementById("characterCountSpan");
+      let characterLimitSpan = document.getElementById("characterLimitSpan");
+      let codeInput = document.getElementById("codeInput");
+        
+      let mapAsString = window.location.search.substring(1);
+      let config = null;
+      
+      if (mapAsString && mapAsString.length > 0) { //from mapstring
+            config = Config.fromBase64(mapAsString,"levelMapSpan");
+        }
+        else { //no mapstring
+            config = Config.createDefault("levelMapSpan");
+        }
+
+        codeInput.oninput = (e) => {
+          characterCountSpan.innerText = codeInput.value.length;
+          if (config.charLimit > 0 && codeInput.value.length >= config.charLimit) {
+            codeInput.value = codeInput.value.substring(0,config.charLimit);
+            characterLimitSpan.style = "color: red;";
+            characterLimitSpan.innerText = " reached";
+          }
+          else {
+            characterLimitSpan.style = "color: black;";
+            characterCountSpan.innerText = codeInput.value.length;
+            characterLimitSpan.innerText = config.charLimit.toString();
+          }
+        }
+        characterCountSpan.innerText = codeInput.value.length;
+        characterLimitSpan.innerText = config.charLimit > 0 ? config.charLimit.toString() : "OFF";
+
+
       //game last
-      var game = new fooBotSolver(
-        "gameDiv",
+      var game = new fooBotSolver("gameDiv",
         "codeInput",
         "playButton",
-        "resetButton");
+        "resetButton",
+        "fastPlayButton",
+        config);
       
     }
     

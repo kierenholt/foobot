@@ -1,3 +1,4 @@
+
 class Grid  {
     widthInSquares: number;
     heightInSquares: number;
@@ -117,6 +118,7 @@ class Grid  {
 
     getConfigGrid(): ConfigGrid {
         let objects = [];
+        let constraints = [];
         //food
         for (let fruit of this.food.getChildren() as Food[]) {
             objects.push(new ConfigObject(fruit.mapCoords,fruit.typeNumber));
@@ -127,7 +129,7 @@ class Grid  {
         }
         //robot
         if (this.robot) objects.push(new ConfigObject(this.robot.mapCoords,0));
-        
+
         return new ConfigGrid(this.widthInSquares,this.heightInSquares,objects);
     }
 
