@@ -1,4 +1,5 @@
 declare function newInterpreter(a: any, b: any): any; //also declared in acorn.js
+declare const Sk: any;
 
 const TILE_SIZE = 64;
 const FOOD_SCALE = 0.75;
@@ -28,6 +29,7 @@ class Robot extends GridSprite {
   //getter and setter for carrying sprite
 
   isDragging: boolean;
+  callStack: any = [];
 
   constructor(grid, scene, x, y, configObject?) {
     super(grid, scene, x, y, 1, "body", "RightLowered", configObject);
@@ -55,6 +57,7 @@ class Robot extends GridSprite {
     }
     aheadTween.play();
   }
+
 
   back(onComplete, repeats) {
     if (repeats < 1 || this.lookingBehindXY == null) {
@@ -259,50 +262,57 @@ class Robot extends GridSprite {
     });
   }
 
-  runCode(myCode, onComplete, playSpeed) {
+  aheadWrapper(repeats) {
+    return new Promise((resolve,reject) => {
+      this.ahead(() => {console.log("resolved");resolve(0);},repeats);
+    });
+  }
+  
+
+  runJSCode(myCode, onComplete, playSpeed) {
     var robot = this;
     Robot.duration = 1000 / playSpeed;
     var initFunc = (interpreter, globalObject) => {
 
       var aheadWrapper = function (repeats) {
         robot.moving = true;
-        robot.ahead(() => { robot.moving = false; robot.nextStep(); }, repeats);
+        robot.ahead(() => { robot.moving = false; robot.nextStepJS(); }, repeats);
       };
       interpreter.setProperty(globalObject, 'ahead', interpreter.createNativeFunction(aheadWrapper));
 
       var backWrapper = function (repeats) {
         robot.moving = true;
-        robot.back(() => { robot.moving = false; robot.nextStep(); }, repeats);
+        robot.back(() => { robot.moving = false; robot.nextStepJS(); }, repeats);
       };
       interpreter.setProperty(globalObject, 'back', interpreter.createNativeFunction(backWrapper));
 
       var rightWrapper = function (repeats) {
         robot.moving = true;
-        robot.right(() => { robot.moving = false; robot.nextStep(); }, repeats);
+        robot.right(() => { robot.moving = false; robot.nextStepJS(); }, repeats);
       };
       interpreter.setProperty(globalObject, 'right', interpreter.createNativeFunction(rightWrapper));
 
       var leftWrapper = function (repeats) {
         robot.moving = true;
-        robot.left(() => { robot.moving = false; robot.nextStep(); }, repeats);
+        robot.left(() => { robot.moving = false; robot.nextStepJS(); }, repeats);
       };
       interpreter.setProperty(globalObject, 'left', interpreter.createNativeFunction(leftWrapper));
 
       var raiseWrapper = function () {
         robot.moving = true;
-        robot.raise(() => { robot.moving = false; robot.nextStep(); });
+        robot.raise(() => { robot.moving = false; robot.nextStepJS(); });
       };
       interpreter.setProperty(globalObject, 'raise', interpreter.createNativeFunction(raiseWrapper));
 
       var lowerWrapper = function () {
         robot.moving = true;
-        robot.lower(() => { robot.moving = false; robot.nextStep(); });
+        robot.lower(() => { robot.moving = false; robot.nextStepJS(); });
       };
       interpreter.setProperty(globalObject, 'lower', interpreter.createNativeFunction(lowerWrapper));
 
       var peekWrapper = function () {
         robot.moving = true;
-        return robot.peek(() => { robot.moving = false; robot.nextStep(); });
+        return robot.peek(() => { robot.moving = false; robot.nextStepJS(); });
       };
       interpreter.setProperty(globalObject, 'peek', interpreter.createNativeFunction(peekWrapper));
 
@@ -315,12 +325,12 @@ class Robot extends GridSprite {
     this.myInterpreter = newInterpreter(myCode, initFunc);
     this.onComplete = onComplete;
 
-    setTimeout(this.nextStep.bind(this), Robot.duration / 2);
+    setTimeout(this.nextStepJS.bind(this), Robot.duration / 2);
   }
 
-  nextStep() {
+  nextStepJS() {
     while (!this.moving && this.myInterpreter.step()) {
-      //nothing between non moving steps
+      //do nothing between non moving steps
     };
     if (!this.moving && this.onComplete) {
       this.onComplete(this);

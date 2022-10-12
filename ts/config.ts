@@ -1,14 +1,21 @@
-
+/***
+ * Stores position and type data for any game object
+ */
 class ConfigObject {
     mapCoords: number[]; //0 - 7
     typeNumber: number;
     howMany: number;
+
 
     constructor(mapCoords,typeNumber) {
         this.mapCoords = mapCoords;
         this.typeNumber = typeNumber;
     }
 
+    /**
+     * 
+     * @returns 2 character base64 string
+     */
     toBase64() {
         let ret = "";
         //position
@@ -18,6 +25,11 @@ class ConfigObject {
         return ret;
     }
 
+    /**
+     * 
+     * @param base64 string 
+     * @returns config object
+     */
     static fromBase64(str) {
         let c1 = Config.RADIX.indexOf(str[0]);
         let x = Math.floor(c1 / 8);
@@ -27,24 +39,42 @@ class ConfigObject {
     }
 }
 
+/***
+ * container for all object data within a single grid 
+ */
 class ConfigGrid {
     width: number;
     height: number;
     objects: ConfigObject[];
     onUpdate;
 
+    /***
+     * @param width width of grid in squares
+     * @param height height of grid in squares
+     * @param objects array of config objects within grid
+     */
     constructor(width, height, objects) {
         this.width = Number(width);
         this.height = Number(height);
         this.objects = objects;
     }
 
+    /**
+     * creates the default grid with robot at 0,0 of specified width and height in squares
+     * @param width width of grid in squares
+     * @param height height of grid in squares
+     * @returns Config Grid object 
+     */
     static createDefaultGrid(width, height) {
         let objects = [];
         objects.push(new ConfigObject([0,0],0)); //0 = robot
         return new ConfigGrid(width,height,objects);
     }
 
+    /**
+     * 
+     * @returns  grid to base64 string 
+     */
     toBase64(): string {
         //if robot is not present, just return blank
         if (this.objects.find(o => o.typeNumber == 0) == undefined) return "";
@@ -56,6 +86,11 @@ class ConfigGrid {
         return ret;
     }
 
+    /**
+     * 
+     * @param str 
+     * @returns 
+     */
     static fromBase64(str: string) : ConfigGrid {
         let c1 = Config.RADIX.indexOf(str[0]);
         let height = (c1 % 8) + 1;
@@ -69,6 +104,10 @@ class ConfigGrid {
         return new ConfigGrid(width,height,objects);
     }
 
+    /**
+     * sets new width 
+     * @param value width in squares
+     */
     setWidth(value) {
         this.width = Number(value);
         //must deep copy before altering array in loop
@@ -87,7 +126,10 @@ class ConfigGrid {
         if (this.onUpdate) this.onUpdate(); //update the link text
     }
 
-
+    /**
+     * sets new height
+     * @param value height in squares
+     */
     setHeight(value) {
         this.height = Number(value);
         //must deep copy before altering array in loop
@@ -106,6 +148,10 @@ class ConfigGrid {
         if (this.onUpdate) this.onUpdate(); //update the link text
     }
 
+    /**
+     * used to remove object e.g. when robot is placed on top or when grid is resized
+     * @param mapCoords [i,j] coords of object to remove
+     */
     removeAllObjectsAtCoords(mapCoords: number[]) {
         for (let o of this.objects) {
             if (o.mapCoords[0] == mapCoords[0] && o.mapCoords[1]== mapCoords[1]) {
@@ -114,17 +160,28 @@ class ConfigGrid {
         }
     }
 
+    /**
+     * searches for item to remove, triggers onupdate 
+     * @param item configobject to remove
+     */
     removeObject(item: ConfigObject) {
         helpers.removeFromArray(this.objects, item);
         if (this.onUpdate) this.onUpdate();
     }
 
+    /**
+     * adds objects and triggers onupdate 
+     * @param object configobject
+     */
     addObject(object: ConfigObject) {
         this.objects.push(object);
         if (this.onUpdate) this.onUpdate(); //update the link text
     }
 }
 
+/**
+ * container that holds all config data for ALL GRIDS
+ */
 class Config {
     static RADIX = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
     static DELIMITER = "+";
@@ -134,6 +191,12 @@ class Config {
     levelMapAnchor: HTMLAnchorElement;
     resetGame: any;
 
+    /**
+     * 
+     * @param configGrids array of all config grids 
+     * @param charLimitUnmultiplied to get character limit for the page, multiplty this by 10
+     * @param levelMapAnchorId id of document element to update
+     */
     constructor(configGrids: ConfigGrid[], 
             charLimitUnmultiplied,
             levelMapAnchorId) {
@@ -151,7 +214,9 @@ class Config {
         );
     }
 
-
+    /**
+     * updates span with new url
+     */
     updateConfigSpan() {
         let base64 = this.toBase64(); 
         this.levelMapAnchor.innerHTML = "solver.html?" + base64;
@@ -159,10 +224,17 @@ class Config {
         if (this.resetGame) this.resetGame();
     }
 
+    /**
+     * actual char limit is multiplied by 10
+     */
     get charLimit() {
         return this.charLimitUnmultiplied*10;
     }
     
+    /**
+     * called by slider in html 
+     * @param value actual char limit which gets /10
+     */
     setCharLimit(value) {
         this.charLimitUnmultiplied = Math.floor(value/10);
         let base64 = this.toBase64(); 
@@ -170,6 +242,11 @@ class Config {
         this.levelMapAnchor.href = "solver.html?" + base64;
     }
     
+    /**
+     * called by slider in html
+     * @param value num grids chosen by user
+     * @returns nothing
+     */
     setNumGrids(value) {
         value = Number(value);
         if (value < 1) {return};
@@ -188,6 +265,10 @@ class Config {
         this.updateConfigSpan(); //updates the link text
     }
 
+    /**
+     * 
+     * @returns base 64 of this whole config
+     */
     toBase64() {
         let ret = "";
         for (let grid of this.configGrids) {

@@ -335,7 +335,7 @@ Config.DELIMITER = "+";
 const GAME_WIDTH = 700;
 const GAME_HEIGHT = 300;
 class fooBotBuilder extends Phaser.Game {
-    constructor(parentId, codeInputId, playButtonId, resetButtonId, fastPlayButtonId, configObject) {
+    constructor(parentId, codeInputId, playButtonId, resetButtonId, fastPlayButtonId, languageSelectId, configObject) {
         let config = {
             type: Phaser.AUTO,
             width: GAME_WIDTH,
@@ -354,13 +354,13 @@ class fooBotBuilder extends Phaser.Game {
                     height: GAME_HEIGHT
                 }
             },
-            scene: [new SceneBuilder(codeInputId, playButtonId, resetButtonId, fastPlayButtonId, configObject)]
+            scene: [new SceneBuilder(codeInputId, playButtonId, resetButtonId, fastPlayButtonId, languageSelectId, configObject)]
         };
         super(config);
     }
 }
 class fooBotSolver extends Phaser.Game {
-    constructor(parentId, codeInputId, playButtonId, resetButtonId, fastPlayButtonId, configObject) {
+    constructor(parentId, codeInputId, playButtonId, resetButtonId, fastPlayButtonId, languageSelectId, configObject) {
         let config = {
             type: Phaser.AUTO,
             width: GAME_WIDTH,
@@ -374,7 +374,7 @@ class fooBotSolver extends Phaser.Game {
             physics: {
                 default: 'arcade'
             },
-            scene: [new SceneSolver(codeInputId, playButtonId, resetButtonId, fastPlayButtonId, configObject)]
+            scene: [new SceneSolver(codeInputId, playButtonId, resetButtonId, fastPlayButtonId, languageSelectId, configObject)]
         };
         super(config);
     }
@@ -898,6 +898,7 @@ class Robot extends GridSprite {
         super(grid, scene, x, y, 1, "body", "RightLowered", configObject);
         this._lookingIndex = 0;
         this.isScoopDown = true;
+        this.callStack = [];
         this.setDepth(10);
         this.typeNumber = 0;
         this.isDragging = false;
@@ -1095,43 +1096,48 @@ class Robot extends GridSprite {
             duration: Robot.duration, ease: Robot.ease, repeat: 0, yoyo: false, paused: false
         });
     }
-    runCode(myCode, onComplete, playSpeed) {
+    aheadWrapper(repeats) {
+        return new Promise((resolve, reject) => {
+            this.ahead(() => { console.log("resolved"); resolve(0); }, repeats);
+        });
+    }
+    runJSCode(myCode, onComplete, playSpeed) {
         var robot = this;
         Robot.duration = 1000 / playSpeed;
         var initFunc = (interpreter, globalObject) => {
             var aheadWrapper = function (repeats) {
                 robot.moving = true;
-                robot.ahead(() => { robot.moving = false; robot.nextStep(); }, repeats);
+                robot.ahead(() => { robot.moving = false; robot.nextStepJS(); }, repeats);
             };
             interpreter.setProperty(globalObject, 'ahead', interpreter.createNativeFunction(aheadWrapper));
             var backWrapper = function (repeats) {
                 robot.moving = true;
-                robot.back(() => { robot.moving = false; robot.nextStep(); }, repeats);
+                robot.back(() => { robot.moving = false; robot.nextStepJS(); }, repeats);
             };
             interpreter.setProperty(globalObject, 'back', interpreter.createNativeFunction(backWrapper));
             var rightWrapper = function (repeats) {
                 robot.moving = true;
-                robot.right(() => { robot.moving = false; robot.nextStep(); }, repeats);
+                robot.right(() => { robot.moving = false; robot.nextStepJS(); }, repeats);
             };
             interpreter.setProperty(globalObject, 'right', interpreter.createNativeFunction(rightWrapper));
             var leftWrapper = function (repeats) {
                 robot.moving = true;
-                robot.left(() => { robot.moving = false; robot.nextStep(); }, repeats);
+                robot.left(() => { robot.moving = false; robot.nextStepJS(); }, repeats);
             };
             interpreter.setProperty(globalObject, 'left', interpreter.createNativeFunction(leftWrapper));
             var raiseWrapper = function () {
                 robot.moving = true;
-                robot.raise(() => { robot.moving = false; robot.nextStep(); });
+                robot.raise(() => { robot.moving = false; robot.nextStepJS(); });
             };
             interpreter.setProperty(globalObject, 'raise', interpreter.createNativeFunction(raiseWrapper));
             var lowerWrapper = function () {
                 robot.moving = true;
-                robot.lower(() => { robot.moving = false; robot.nextStep(); });
+                robot.lower(() => { robot.moving = false; robot.nextStepJS(); });
             };
             interpreter.setProperty(globalObject, 'lower', interpreter.createNativeFunction(lowerWrapper));
             var peekWrapper = function () {
                 robot.moving = true;
-                return robot.peek(() => { robot.moving = false; robot.nextStep(); });
+                return robot.peek(() => { robot.moving = false; robot.nextStepJS(); });
             };
             interpreter.setProperty(globalObject, 'peek', interpreter.createNativeFunction(peekWrapper));
             var logWrapper = function (str) {
@@ -1141,9 +1147,9 @@ class Robot extends GridSprite {
         };
         this.myInterpreter = newInterpreter(myCode, initFunc);
         this.onComplete = onComplete;
-        setTimeout(this.nextStep.bind(this), Robot.duration / 2);
+        setTimeout(this.nextStepJS.bind(this), Robot.duration / 2);
     }
-    nextStep() {
+    nextStepJS() {
         while (!this.moving && this.myInterpreter.step()) {
         }
         ;
@@ -1217,7 +1223,7 @@ Robot.carryingHeight = 32;
 const GRID_LEFT = 192;
 const GRID_TOP = 32;
 class SceneBase extends Phaser.Scene {
-    constructor(codeInputId, playButtonId, resetButtonId, fastPlayButtonId, config) {
+    constructor(codeInputId, playButtonId, resetButtonId, fastPlayButtonId, languageSelectId, config) {
         super({
             key: 'sceneA',
             active: true,
@@ -1231,6 +1237,7 @@ class SceneBase extends Phaser.Scene {
         this.grids = [];
         this.gridIsCompletedByIndex = [];
         SceneBase.instance = this;
+        window["SceneBaseInstance"] = this;
         this.codeInput = document.getElementById(codeInputId);
         this.playButton = document.getElementById(playButtonId);
         this.playButton.onclick = this.runCodeOnAllRobots.bind(this, [1]);
@@ -1238,6 +1245,7 @@ class SceneBase extends Phaser.Scene {
         this.resetButton.onclick = this.resetButtonAction.bind(this);
         this.fastPlayButton = document.getElementById(fastPlayButtonId);
         this.fastPlayButton.onclick = this.runCodeOnAllRobots.bind(this, [5]);
+        this.languageSelect = document.getElementById(languageSelectId);
         this.currentConfig = config;
     }
     preload() {
@@ -1254,8 +1262,35 @@ class SceneBase extends Phaser.Scene {
     runCodeOnAllRobots(playSpeed) {
         this.resetButtonAction();
         let code = this.codeInput.value;
-        for (let robot of this.robots) {
-            robot.runCode(code, this.setRobotCompleted.bind(this), playSpeed);
+        if (this.languageSelect.value == "javascript") {
+            for (let robot of this.robots) {
+                robot.runJSCode(code, this.setRobotCompleted.bind(this), playSpeed);
+            }
+        }
+        if (this.languageSelect.value == "python") {
+            Sk.builtins.ahead = new Sk.builtin.func(function (n, steps) {
+                if (steps == undefined) {
+                    steps = 1;
+                }
+                return new Sk.misceval.promiseToSuspension(window["SceneBaseInstance"].robots[n].aheadWrapper(steps).then(() => Sk.builtin.none.none$));
+            });
+            let replacedCode = code.replace(/ahead\(/g, "ahead(0,");
+            Sk.configure({
+                output: () => { },
+                killableWhile: true,
+                killableFor: true,
+                __future__: Sk.python3
+            });
+            let stopExecution = false;
+            Sk.misceval.asyncToPromise(() => Sk.importMainWithBody("<stdin>", false, replacedCode, true), {
+                "*": () => {
+                    if (stopExecution)
+                        throw "Execution interrupted";
+                }
+            }).catch(err => {
+                alert(err.toString());
+            }).finally(() => {
+            });
         }
     }
     setRobotCompleted(robot) {
@@ -1293,8 +1328,8 @@ class SceneBase extends Phaser.Scene {
     }
 }
 class SceneBuilder extends SceneBase {
-    constructor(codeInputId, playButtonId, resetButtonId, fastPlayButtonId, config) {
-        super(codeInputId, playButtonId, resetButtonId, fastPlayButtonId, config);
+    constructor(codeInputId, playButtonId, resetButtonId, fastPlayButtonId, languageSelectId, config) {
+        super(codeInputId, playButtonId, resetButtonId, fastPlayButtonId, languageSelectId, config);
         SceneBase.builderMode = true;
         config.resetGame = this.resetButtonAction.bind(this);
     }
@@ -1312,8 +1347,8 @@ class SceneBuilder extends SceneBase {
     }
 }
 class SceneSolver extends SceneBase {
-    constructor(codeInputId, playButtonId, resetButtonId, fastPlayButtonId, config) {
-        super(codeInputId, playButtonId, resetButtonId, fastPlayButtonId, config);
+    constructor(codeInputId, playButtonId, resetButtonId, fastPlayButtonId, languageSelectId, config) {
+        super(codeInputId, playButtonId, resetButtonId, fastPlayButtonId, languageSelectId, config);
         SceneBase.builderMode = false;
         this.firstMapAsString = config.toBase64();
     }

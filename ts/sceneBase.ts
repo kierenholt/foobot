@@ -13,14 +13,17 @@ class SceneBase extends Phaser.Scene {
     resetButton: HTMLImageElement;
     fastPlayButton: HTMLImageElement;
 
+
     currentConfig: Config;
     static builderMode: boolean;
+    languageSelect: HTMLSelectElement;
 
     constructor(
         codeInputId, 
         playButtonId, 
         resetButtonId, 
         fastPlayButtonId,
+        languageSelectId,
         config: Config) {
         super({
             key: 'sceneA',
@@ -35,6 +38,7 @@ class SceneBase extends Phaser.Scene {
             },
         });
         SceneBase.instance = this;
+        window["SceneBaseInstance"] = this; //ugly global reference needed so skulpt can access robots
         this.codeInput = document.getElementById(codeInputId) as HTMLTextAreaElement;
         this.playButton = document.getElementById(playButtonId) as HTMLImageElement;
         this.playButton.onclick = this.runCodeOnAllRobots.bind(this,[1]);
@@ -44,6 +48,9 @@ class SceneBase extends Phaser.Scene {
 
         this.fastPlayButton = document.getElementById(fastPlayButtonId) as HTMLImageElement;
         this.fastPlayButton.onclick = this.runCodeOnAllRobots.bind(this,[5]);
+
+
+        this.languageSelect = document.getElementById(languageSelectId) as HTMLSelectElement;
 
         this.currentConfig = config;
     }
@@ -67,8 +74,46 @@ class SceneBase extends Phaser.Scene {
     runCodeOnAllRobots(playSpeed) {
         this.resetButtonAction();
         let code = this.codeInput.value;
-        for (let robot of this.robots) {
-            robot.runCode(code,this.setRobotCompleted.bind(this),playSpeed);
+
+        if (this.languageSelect.value == "javascript") {
+            for (let robot of this.robots) {
+                robot.runJSCode(code,this.setRobotCompleted.bind(this),playSpeed);
+            }
+        }
+        if (this.languageSelect.value == "python") {
+
+            Sk.builtins.ahead = new Sk.builtin.func(function (n,steps) {
+                if (steps == undefined) {steps = 1;}
+                return new Sk.misceval.promiseToSuspension(
+                    window["SceneBaseInstance"].robots[n].aheadWrapper(steps).then(() => Sk.builtin.none.none$)
+                    );
+            });
+
+            let replacedCode = code.replace(/ahead\(/g,"ahead(0,");
+            
+            //Sk.configure({output:()=>{}});
+            //fill the command stack
+            //Sk.importMainWithBody("<stdin>", false, replacedCode, true);
+            Sk.configure({
+                output: ()=>{},
+                killableWhile: true,
+                killableFor: true,
+                __future__: Sk.python3
+              });
+
+        let stopExecution = false;
+        Sk.misceval.asyncToPromise(() =>
+            Sk.importMainWithBody("<stdin>", false, replacedCode, true), {
+            "*": () => {
+              if (stopExecution) throw "Execution interrupted"
+            }
+          },
+          ).catch(err => {
+            alert(err.toString());
+          }).finally(() => {
+           // Do things
+          })
+
         }
     }
 
@@ -115,7 +160,7 @@ class SceneBase extends Phaser.Scene {
         }
         return null;
     }
-
+ 
 }
 
 class SceneBuilder extends SceneBase {
@@ -124,11 +169,13 @@ class SceneBuilder extends SceneBase {
         playButtonId, 
         resetButtonId,
         fastPlayButtonId,
+        languageSelectId,
         config: Config) {
         super(codeInputId, 
             playButtonId, 
             resetButtonId,
             fastPlayButtonId,
+            languageSelectId,
             config);
 
         SceneBase.builderMode = true;
@@ -164,11 +211,13 @@ class SceneSolver extends SceneBase {
         playButtonId, 
         resetButtonId,
         fastPlayButtonId, 
+        languageSelectId,
         config: Config) {
         super(codeInputId, 
             playButtonId, 
             resetButtonId,
             fastPlayButtonId,
+            languageSelectId,
             config
             );
         SceneBase.builderMode = false;

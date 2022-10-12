@@ -9,6 +9,7 @@ class fooBotBuilder extends Phaser.Game {
     playButtonId,
     resetButtonId,
     fastPlayButtonId,
+    languageSelectId,
     configObject) {
 
     let config = { 
@@ -39,6 +40,7 @@ class fooBotBuilder extends Phaser.Game {
         playButtonId,
         resetButtonId,
         fastPlayButtonId,
+        languageSelectId,
         configObject) ]
     };
     super(config);
@@ -53,6 +55,7 @@ class fooBotSolver extends Phaser.Game {
     playButtonId,
     resetButtonId,
     fastPlayButtonId,
+    languageSelectId,
     configObject) {
 
     let config = { 
@@ -77,6 +80,7 @@ class fooBotSolver extends Phaser.Game {
         playButtonId,
         resetButtonId,
         fastPlayButtonId,
+        languageSelectId,
         configObject) ]
     };
     super(config);
