@@ -1,53 +1,171 @@
 
-body { margin: 0; }
+body {
+  font-family: sans-serif;
+  margin: 0; 
+  background: #222;
+  color: white;
+}
 
-div#buttons {
-  width: 100%;
+/*** LAYOUT ***/
+body#solver div#gameContainer {
+  width: 50%;
+}
+body#builder div#gameContainer {
+  width: 95%;
+  height: 420px;
+}
+
+div#gameContainer {
+  position: relative;
+
+  border: solid 3px #b54fad; 
+  margin: 10px 0 0 2%;
+  float: left;
+  overflow: auto;
+  resize: both;
+  background: #999;
+  padding: 0;
+}
+
+div#gameDiv {
+  overflow: auto;
+}
+
+input#zoomSlider {
+  clear: both;
+  width: 97%;
+  position: absolute;
+  top: 90%;
+  accent-color: #f00;
+  margin: 0;
+  padding: 0;
+}
+div#gameDiv input#zoomSlider:before {
+  content: "-";
+  color: #fff;
+}
+div#gameDiv input#zoomSlider:after {
+  content: "+";
+  color: #000;
+}
+
+
+div#gameDiv canvas {  
+  padding: 0;
+  margin: 0;
+  
+}
+
+/*** HEADER ***/
+div#header {
+  width: 95%;
+  padding: 0 2%;
+}
+div#header img {
+  height: 120px;
+  
+}
+
+/*** FOOTER ***/
+div#footer {
+  width: 95%;
+  padding: 0 2%;
+  clear: both;
+  
+}
+
+/*** INDEX ***/
+div.problemSet {
+  border: solid 3px #b54fad;  
+  margin: 20px;
+}
+
+/*** INDEX ***/
+
+div.problemSet h1 {
+  color: #ff0;
+  margin: 0;
+}
+div.problemSet {
+  padding: 15px;
+  background: #777;
+}
+div.problemSet h1:before {
+  content: url("pageImages/foobotImage.png")
+}
+div.problemSet a img {
+  border: 1px solid transparent;
+}
+
+
+div.problemSet a img:hover {
+  border: 1px solid white;
+}
+
+
+/***SOLVER AND BUILDER PAGE***/
+
+
+body#builder div#controls {
+    width: 92%;
+}
+body#solver div#controls {
+    width: 40%;
+}
+
+div#controls {
+  border: solid 3px #b54fad;  
+  background: #999;
+    width: 40%;
   left: 0px;
   z-index: 100;
-}
-div#buttons div#left {
-  width: 50%;
-  clear: none;
   float: left;
-  margin: 25px;
+  margin: 10px 0 0 2% ;
+  padding: 1%;
+  resize: both;
+  overflow-x: auto;
+  
 }
-div#buttons div#right {
-  width: 40%;
-  float: left;
-  clear: none;
+div#controls textarea#codeInput {
+  clear: both;
+  display: block;
+  width: 95%;
+  margin: 0 auto;
+  height: 200px;
+  color: #fff;
+  background: #333;
+  padding: 5px;
+  font-family: monospace;
+  font-weight: bold;
 }
-textarea#codeInput {
-  width: 100%;
-  height: 100px;
+div#controls select#languageSelect {
+  color: #fff;
+  background: #999;  
+  border: none;
+  margin: 10px 0;
+  color: #333;
 }
-div#buttons img {
-  border-color: #888;
-  border-width: 1px;
+div#controls img {
+  border-color: #333;
+  border-width: 2px;
   border-style: solid;
   border-radius: 5px;
   padding: 2px;
   margin: 20px 0px 0px 6px;
+  height: 40px;
 }
-div#gameDiv {
-  position: relative;
-  overflow: scroll;
+div#controls p#characterCount {
+  margin: 0;
+  font-size: 70%;
+  color: #333;
+  float: right;
+  clear: both;
 }
 div#settings {    
   position: absolute;
   right: 0;
   top: 0;
   width: 100px;
-}
-canvas#ripples { 
-  position: absolute; 
-  top: 0; 
-  left: 100px;
-}
-canvas#objects { 
-  position: absolute; 
-  top: 0; 
-  left: 0
 }
 
 .slider {
@@ -81,17 +199,6 @@ background: #000;
 cursor: pointer;
 }
 
-.right {
-position: absolute;
-bottom: 0;
-right: 0;
-}
-
-.left {
-position: absolute;
-bottom: 0;
-left: 0;
-}
 
 .fixedHeight {
 position: relative;

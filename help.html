@@ -1,30 +1,37 @@
 <html>
+<head>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
     <body>
-        <h2>
-            The aim
-        </h2>
+        <div class="problemSet">
+            <h1>The aim        </h1>
         <p>
             Use the commands below to pick up all of the fruit and put them into the correct boxes. Once all the fruit is in a box, you have won!
         </p>
-        <h2>
-            Commands
-        </h2>
+        </div>
+
+        <div class="problemSet">
+            <h1>Commands        </h1>
         <table>
             <tr><td>Command</td><td>Foobot action</td></tr>
             <tr><td>ahead(n)</td><td>Move forwards n squares</td></tr>
             <tr><td>back(n)</td><td>Move backwards n squares</td></tr>
             <tr><td>left(n)</td><td>Turn left 90 degrees n times</td></tr>
             <tr><td>right(n)</td><td>Turn right 90 degrees n times</td></tr>
-            <tr><td>raise()</td><td>Pick up a fruit if it is in front of foobot</td></tr>
-            <tr><td>lower()</td><td>Lower a fruit that foobot is carrying</td></tr>
+            <tr><td>lift()</td><td>Lift a fruit if it is in front of foobot</td></tr>
+            <tr><td>drop()</td><td>Drop a fruit that foobot is carrying</td></tr>
             <tr><td>peek()</td><td>This function returns a letter corresponding to the fruit that Foobot is currently facing. "a" for apple, "b" for banana etc. and "" if there is no fruit</td></tr>
         </table>
+</div>
 
-        <h2>
-            An example
-        </h2>
+
+        <div class="problemSet">
+
+        <h1>An example</h1>
+        <img src="assets/foobot-help-example.png"></img>
         <p>
-            <img src="assets/foobot-help-example.png"></img>
             Foobot needs to:
             <ol>
                 <li>go ahead one square to the banana</li>
@@ -36,12 +43,13 @@
             <p>The code would look like this:</p>
             <pre>
                 ahead(); 
-                raise(); 
+                lift(); 
                 right(); 
                 ahead(); 
-                lower();
+                drop();
             </pre>
         </p>
+        </div>
 
     </body>
 </html>

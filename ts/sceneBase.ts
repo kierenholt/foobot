@@ -73,11 +73,16 @@ class SceneBase extends Phaser.Scene {
 
     runCodeOnAllRobots(playSpeed) {
         this.resetButtonAction();
-        let code = this.codeInput.value;
 
         if (this.languageSelect.value == "javascript") {
-            for (let robot of this.robots) {
-                robot.runJSCode(code,this.setRobotCompleted.bind(this),playSpeed);
+            let code = this.codeInput.value;
+            try {
+                for (let robot of this.robots) {
+                    robot.runJSCode(code,this.setRobotCompleted.bind(this),playSpeed);
+                }    
+            }
+            catch(err) {
+                alert(err.toString());
             }
         }
         if (this.languageSelect.value == "python") {
@@ -85,35 +90,73 @@ class SceneBase extends Phaser.Scene {
             Sk.builtins.ahead = new Sk.builtin.func(function (n,steps) {
                 if (steps == undefined) {steps = 1;}
                 return new Sk.misceval.promiseToSuspension(
-                    window["SceneBaseInstance"].robots[n].aheadWrapper(steps).then(() => Sk.builtin.none.none$)
+                    SceneBase.instance.robots[n].aheadPromise(steps).then(() => Sk.builtin.none.none$)
                     );
             });
-
-            let replacedCode = code.replace(/ahead\(/g,"ahead(0,");
+            Sk.builtins.back = new Sk.builtin.func(function (n,steps) {
+                if (steps == undefined) {steps = 1;}
+                return new Sk.misceval.promiseToSuspension(
+                    SceneBase.instance.robots[n].backPromise(steps).then(() => Sk.builtin.none.none$)
+                    );
+            });
+            Sk.builtins.right = new Sk.builtin.func(function (n,steps) {
+                if (steps == undefined) {steps = 1;}
+                return new Sk.misceval.promiseToSuspension(
+                    SceneBase.instance.robots[n].rightPromise(steps).then(() => Sk.builtin.none.none$)
+                    );
+            });
+            Sk.builtins.left = new Sk.builtin.func(function (n,steps) {
+                if (steps == undefined) {steps = 1;}
+                return new Sk.misceval.promiseToSuspension(
+                    SceneBase.instance.robots[n].leftPromise(steps).then(() => Sk.builtin.none.none$)
+                    );
+            });
+            Sk.builtins.lift = new Sk.builtin.func(function (n) {
+                return new Sk.misceval.promiseToSuspension(
+                    SceneBase.instance.robots[n].liftPromise().then(() => Sk.builtin.none.none$)
+                    );
+            });
+            Sk.builtins.drop = new Sk.builtin.func(function (n) {
+                return new Sk.misceval.promiseToSuspension(
+                    SceneBase.instance.robots[n].dropPromise().then(() => Sk.builtin.none.none$)
+                    );
+            });
             
-            //Sk.configure({output:()=>{}});
-            //fill the command stack
-            //Sk.importMainWithBody("<stdin>", false, replacedCode, true);
-            Sk.configure({
-                output: ()=>{},
-                killableWhile: true,
-                killableFor: true,
-                __future__: Sk.python3
-              });
+            Sk.builtins.peek = new Sk.builtin.func((n) => {
+                let letter = SceneBase.instance.robots[n].peek(()=>{});
+                return  new Sk.builtins['str'](letter);
+            });
 
-        let stopExecution = false;
-        Sk.misceval.asyncToPromise(() =>
-            Sk.importMainWithBody("<stdin>", false, replacedCode, true), {
-            "*": () => {
-              if (stopExecution) throw "Execution interrupted"
+            for (let i = 0; i < this.robots.length; i++) {
+                let code = this.codeInput.value;
+                code = code.replace(/ahead\(/g,`ahead(${i},`);
+                code = code.replace(/back\(/g,`back(${i},`);
+                code = code.replace(/right\(/g,`right(${i},`);
+                code = code.replace(/left\(/g,`left(${i},`);
+                code = code.replace(/lift\(\)/g,`lift(${i})`);
+                code = code.replace(/drop\(\)/g,`drop(${i})`);
+                code = code.replace(/peek\(\)/g,`peek(${i})`);
+
+                Sk.configure({
+                    output: (s)=>{console.log(s)},
+                    killableWhile: true,
+                    killableFor: true,
+                    __future__: Sk.python3
+                });
+
+                let stopExecution = false;
+                Sk.misceval.asyncToPromise(() =>
+                    Sk.importMainWithBody("<stdin>", false, code, true), {
+                    "*": () => {
+                    if (stopExecution) throw "Execution interrupted"
+                    }
+                },
+                ).catch(err => {
+                    alert(err.toString());
+                }).finally(() => {
+                // Do things
+                })
             }
-          },
-          ).catch(err => {
-            alert(err.toString());
-          }).finally(() => {
-           // Do things
-          })
-
         }
     }
 

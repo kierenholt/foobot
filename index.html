@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>FOOBOT</title>
+  <script src="phaser.js"></script>
+  <script src="foobot.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body onload="ready()">
+
+  <!---alt denotes fruit type, images get turned into full empty on load-->
+<div class="problemSet">
+  <h1>Introductory problems</h1>
+  <p>Learn <a href="help.html">the basic commands</a> and you should be fine! Each box represents a challenge. Click a box to start coding!</p>
+  <a href="solver.html?2I91H510"><img id="2I91H510" src="pageImages/empty.png" alt="a"/></a>
+  <a href="solver.html?2I842800"><img id="2I842800" src="pageImages/empty.png" alt="d"/></a>
+  <a href="solver.html?2I938710"><img id="2I938710" src="pageImages/empty.png" alt="c"/></a>
+  <a href="solver.html?2II307A0"><img id="2II307A0" src="pageImages/empty.png" alt="c"/></a>
+  <a href="solver.html?2IA3G7I0"><img id="2IA3G7I0" src="pageImages/empty.png" alt="c"/></a>
+  <a href="solver.html?2I821600"><img id="2I821600" src="pageImages/empty.png" alt="b"/></a>
+  <a href="solver.html?2IG20680"><img id="2IG20680" src="pageImages/empty.png" alt="b"/></a>
+  <a href="solver.html?2I2195A0"><img id="2I2195A0" src="pageImages/empty.png" alt="a"/></a>
+  <a href="solver.html?2IG20680"><img id="2IG20680" src="pageImages/empty.png" alt="b"/></a>
+  <a href="solver.html?2I839700"><img id="2I839700" src="pageImages/empty.png" alt="c"/></a>
+  <a href="solver.html?2I04I880"><img id="2I04I880" src="pageImages/empty.png" alt="d"/></a>
+  <a href="solver.html?2I811500"><img id="2I811500" src="pageImages/empty.png" alt="a"/></a>
+  <a href="solver.html?2IA286G0"><img id="2IA286G0" src="pageImages/empty.png" alt="b"/></a>
+  <a href="solver.html?2I1387A0"><img id="2I1387A0" src="pageImages/empty.png" alt="c"/></a>
+  <a href="solver.html?2I81G5A0"><img id="2I81G5A0" src="pageImages/empty.png" alt="a"/></a>
+  <a href="solver.html?2I9115H0"><img id="2I9115H0" src="pageImages/empty.png" alt="a"/></a>
+  <a href="solver.html?2I129620"><img id="2I129620" src="pageImages/empty.png" alt="b"/></a>
+  <a href="solver.html?2I948820"><img id="2I948820" src="pageImages/empty.png" alt="d"/></a>
+</div>
+
+<div class="problemSet">
+  <h1>Using parameters</h1>
+  <p>In order to fit into the character limit, it is necessary to use parameters within each command</p>
+  <a href="solver.html?2uu10580"><img id="2uu10580" src="pageImages/empty.png" alt="a"/></a>
+  <a href="solver.html?2uu20680+5"><img id="2uu20680+5" src="pageImages/empty.png" alt="b"/></a>
+  <a href="solver.html?2uu105m0+4"><img id="2uu105m0+4" src="pageImages/empty.png" alt="d"/></a>
+  <a href="solver.html?6yy3q2i1u7m6e500+M"><img id="6yy3q2i1u7m6e500+M" src="pageImages/empty.png" alt="b"/></a>
+  <a href="solver.html?6yB2I1P3v7w5x600+M"><img id="6yB2I1P3v7w5x600+M" src="pageImages/empty.png" alt="c"/></a>
+</div>
+
+<div class="problemSet">
+  <h1>If</h1>
+  <p>Combine if statements with peek() to tell the different foobots when to lift the scoop.</p>
+  <a href="solver.html?2X81W5002XG1W500"><img id="2X81W5002XG1W500" src="pageImages/empty.png" alt="b"/></a>
+  <a href="solver.html?2I8100252I008216"><img id="2I8100252I008216" src="pageImages/empty.png" alt="c"/></a>
+  <a href="solver.html?3I9185A6103I9285A610"><img id="3I9185A6103I9285A610" src="pageImages/empty.png" alt="a"/></a>
+  <a href="solver.html?2P8216002PG296002PO2H600"><img id="2P8216002PG296002PO2H600" src="pageImages/empty.png" alt="d"/></a>
+  <a href="solver.html?2XG206802XO206802XW20680"><img id="2XG206802XO206802XW20680" src="pageImages/empty.png" alt="b"/></a>
+  <a href="solver.html?2X8200G62XG200O62X00W6O2"><img id="2X8200G62XG200O62X00W6O2" src="pageImages/empty.png" alt="b"/></a>
+  <a href="solver.html?4H0017H596G34H009617H5G24H00H59617G1"><img id="4H0017H596G34H009617H5G24H00H59617G1" src="pageImages/empty.png" alt="c"/></a>
+  <a href="solver.html?2D0093272D0092362D009145"><img id="2D0093272D0092362D009145" src="pageImages/empty.png" alt="d"/></a>
+  <a href="solver.html?2XW115802XW296802XW3H780"><img id="2XW115802XW296802XW3H780" src="pageImages/empty.png" alt="c"/></a>
+  <a href="solver.html?2XW195002XO296002XG39700"><img id="2XW195002XO296002XG39700" src="pageImages/empty.png" alt="b"/></a>
+  <a href="solver.html?2QO125002QO2A6002QO3I700"><img id="2QO125002QO2A6002QO3I700" src="pageImages/empty.png" alt="a"/></a>
+</div>
+
+<div class="problemSet">
+  <h1>For</h1>
+  <p>Repeated commands need to be enclosed in for loops if you want to stay under the character limit!</p>
+  <a href="solver.html?BI810081818181818181818115+A"><img id="BI810081818181818181818115+A" src="pageImages/empty.png" alt="c"/></a>
+  <a href="solver.html?Fx00A7I7Q7Y7g7o7w783G3O3W3e3m3u327+A"><img id="Fx00A7I7Q7Y7g7o7w783G3O3W3e3m3u327+A" src="pageImages/empty.png" alt="a"/></a>
+  <a href="solver.html?2X8216002XG296002XO2H6002X00P6W2+A"><img id="2X8216002XG296002XO2H6002X00P6W2+A" src="pageImages/empty.png" alt="b"/></a>
+  <a href="solver.html?2F1005212F1005312F1005412F100551+A"><img id="2F1005212F1005312F1005412F100551+A" src="pageImages/empty.png" alt="b"/></a>
+  <a href="solver.html?2L8200G62L0092H62L00A2I62L00J6B2+A"><img id="2L8200G62L0092H62L00A2I62L00J6B2+A" src="pageImages/empty.png" alt="a"/></a>
+  <a href="solver.html?2D0093272D0036A22D0045B12D0058C4+A"><img id="2D0093272D0036A22D0045B12D0058C4+A" src="pageImages/empty.png" alt="d"/></a>
+  <a href="solver.html?2D0013272D0023372D0033472D004357+A"><img id="2D0013272D0023372D0033472D004357+A" src="pageImages/empty.png" alt="c"/></a>
+</div>
+
+<div class="problemSet">
+  <h1>While</h1>
+  <p>Repeated commands need to be enclosed in while loops if you want to stay under the character limit!</p>
+  <a href="solver.html?AI0084848484848484848498"><img id="AI0084848484848484848498" src="pageImages/empty.png" alt="c"/></a>
+  <a href="solver.html?Mw8100818181818181818125O3I7O3O3O3Q8W4G2G2G2O3A6"><img id="Mw8100818181818181818125O3I7O3O3O3Q8W4G2G2G2O3A6" src="pageImages/empty.png" alt="b"/></a>
+  <a href="solver.html?8I00838383A783838383+A"><img id="8I00838383A783838383+A" src="pageImages/empty.png" alt="c"/></a>
+  <a href="solver.html?9g00232323O72323232323+D"><img id="9g00232323O72323232323+D" src="pageImages/empty.png" alt="d"/></a>
+  <a href="solver.html?8n00O2O216O2O2O2O2O2An00O3O3O3O3O3O3O3O3O317+A"><img id="8n00O2O216O2O2O2O2O2An00O3O3O3O3O3O3O3O3O317+A" src="pageImages/empty.png" alt="c"/></a>
+  <a href="solver.html?2F00B2C62F00D3E72F0094A82F00B1C5+A"><img id="2F00B2C62F00D3E72F0094A82F00B1C5+A" src="pageImages/empty.png" alt="d"/></a>
+  <a href="solver.html?2I82H6102IH1A5102I1387102IA41810+8"><img id="2I82H6102IH1A5102I1387102IA41810+8" src="pageImages/empty.png" alt="a"/></a>
+</div>
+
+<div class="problemSet">
+  <h1>Advanced Loops</h1>
+  <p>These challenges require nested for and while loops. Good luck!</p>
+  <a href="solver.html?JI0012122612121212121294A89494H1I5H1H1H1H1+D"><img id="JI0012122612121212121294A89494H1I5H1H1H1H1+D" src="pageImages/empty.png" alt="b"/></a>
+  <a href="solver.html?9n0082G2O2W2e2m2O2e216An0083O3e3m3m3m3m3m3e317+H"><img id="9n0082G2O2W2e2m2O2e216An0083O3e3m3m3m3m3m3e317+H" src="pageImages/empty.png" alt="d"/></a>
+  <a href="solver.html?IL00H1H1H1H115I226K347K3K3K3K3K3K358L4L4+K"><img id="IL00H1H1H1H115I226K347K3K3K3K3K3K358L4L4+K" src="pageImages/empty.png" alt="c"/></a>
+  <a href="solver.html?d_00O2O2O2O2O2O2O2O2W296H6P6X6f6n6m216R6Z6p6r6o6q6K2j6b6T6S6J2c2U2c2k2x2y2y2K2Y2i2+F"><img id="d_00O2O2O2O2O2O2O2O2W296H6P6X6f6n6m216R6Z6p6r6o6q6K2j6b6T6S6J2c2U2c2k2x2y2y2K2Y2i2+F" src="pageImages/empty.png" alt="a"/></a>
+</div>
+
+<script>
+    function ready() {
+        let w = new Completion("");
+    }
+
+
+</script>
+
+
+</body>
+
+</html>

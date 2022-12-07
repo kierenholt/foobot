@@ -19,6 +19,14 @@
             "port": 9222,
             "url": "0.0.0.0:8000/solver.html",
             "webRoot": "${workspaceFolder}"
+        },
+        {
+            "name": "Attach to index",
+            "type": "chrome",
+            "request": "attach",
+            "port": 9222,
+            "url": "0.0.0.0:8000/index.html",
+            "webRoot": "${workspaceFolder}"
         }
     ]
 }

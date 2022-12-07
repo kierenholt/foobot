@@ -149,6 +149,81 @@ class Box extends DraggableGridSprite {
         return this._containsFruit;
     }
 }
+class Completion {
+    constructor(languageSelectId) {
+        this.completedCodes = [];
+        this.preferredLanguage = "";
+        if (localStorage) {
+            let json = localStorage.getItem("foobot");
+            if (json) {
+                let obj = JSON.parse(json);
+                this.completedCodes = obj["completed"];
+                this.preferredLanguage = obj["preferredLanguage"];
+            }
+        }
+        if (!("ch" in window)) {
+            let ch = new BroadcastChannel('teachometer-lesson');
+            ch.addEventListener('message', function (_completionInstance) {
+                var completion = _completionInstance;
+                return (e) => {
+                    if (e.data.substring(0, 6) == "foobot") {
+                        completion.add(e.data.substring(7));
+                        completion.updateAllBoxes();
+                        completion.save();
+                    }
+                };
+            }(this));
+        }
+        let languageSelect = document.getElementById(languageSelectId);
+        if (languageSelect) {
+            if (this.preferredLanguage != "") {
+                languageSelect.value = this.preferredLanguage;
+            }
+            languageSelect.onchange = (e) => {
+                this.preferredLanguage = languageSelect.value;
+                this.save();
+            };
+        }
+        this.updateAllBoxes();
+    }
+    add(mapString) {
+        this.completedCodes.push(mapString);
+    }
+    mapIsCompleted(mapString) {
+        return this.completedCodes.indexOf(mapString) != -1;
+    }
+    save() {
+        if (localStorage) {
+            let obj = {
+                completed: this.completedCodes,
+                preferredLanguage: this.preferredLanguage
+            };
+            localStorage.setItem("foobot", JSON.stringify(obj));
+        }
+        else {
+            throw ("no local storage");
+        }
+    }
+    updateAllBoxes() {
+        let images = document.getElementsByTagName("img");
+        for (let image of images) {
+            if (image instanceof HTMLImageElement) {
+                let letterIndex = Completion.boxLetters.indexOf(image.alt);
+                if (letterIndex != -1) {
+                    if (this.mapIsCompleted(image.id)) {
+                        image.src = Completion.boxFullImages[letterIndex];
+                    }
+                    else {
+                        image.src = Completion.boxEmptyImages[letterIndex];
+                    }
+                }
+            }
+        }
+    }
+}
+Completion.boxLetters = ["a", "b", "c", "d"];
+Completion.boxFullImages = ["pageImages/a-full.png", "pageImages/b-full.png", "pageImages/c-full.png", "pageImages/d-full.png"];
+Completion.boxEmptyImages = ["pageImages/a-empty.png", "pageImages/b-empty.png", "pageImages/c-empty.png", "pageImages/d-empty.png"];
 class ConfigObject {
     constructor(mapCoords, typeNumber) {
         this.mapCoords = mapCoords;
@@ -961,7 +1036,7 @@ class Robot extends GridSprite {
             return fruit.letterForPeek;
         return "";
     }
-    raise(onComplete) {
+    lift(onComplete) {
         if (!this.isScoopDown) {
             if (onComplete)
                 onComplete();
@@ -992,13 +1067,13 @@ class Robot extends GridSprite {
         moveTowardsTween.on("complete", liftScoopInjector(moveAwayTween, this, this.carryingFruit));
         moveTowardsTween.play();
     }
-    lower(onComplete) {
+    drop(onComplete) {
         if (this.isScoopDown) {
             if (onComplete)
                 onComplete();
             return;
         }
-        let lowerScoopInjector = function (paramOnCompleteTween, robot, fruit, coords, paramCanDrop) {
+        let dropScoopInjector = function (paramOnCompleteTween, robot, fruit, coords, paramCanDrop) {
             var paramOnCompleteTween = paramOnCompleteTween;
             var robot = robot;
             let dropCoords = coords;
@@ -1030,7 +1105,7 @@ class Robot extends GridSprite {
         let moveAwayTween = this.getMoveAwayFomFruitTween();
         if (onComplete)
             moveAwayTween.on("complete", onComplete);
-        moveTowardsTween.on("complete", lowerScoopInjector(moveAwayTween, this, droppedFruit, dropCoords, canDrop));
+        moveTowardsTween.on("complete", dropScoopInjector(moveAwayTween, this, droppedFruit, dropCoords, canDrop));
         moveTowardsTween.play();
     }
     get lookingIndex() { return this._lookingIndex; }
@@ -1067,16 +1142,16 @@ class Robot extends GridSprite {
     getMoveTowardsFruitTween() {
         return this.scene.tweens.create({
             targets: this.carryingFruit ? [this, this.carryingFruit] : this,
-            x: "+= " + (this.isSideView ? Robot.lookingX[this.lookingIndex] * Robot.raiseAndLowerDistance : 0),
-            y: "+= " + (this.isSideView ? 0 : Robot.lookingY[this.lookingIndex] * Robot.raiseAndLowerDistance),
+            x: "+= " + (this.isSideView ? Robot.lookingX[this.lookingIndex] * Robot.liftAndDropDistance : 0),
+            y: "+= " + (this.isSideView ? 0 : Robot.lookingY[this.lookingIndex] * Robot.liftAndDropDistance),
             duration: Robot.duration / 2, ease: Robot.ease, repeat: 0, yoyo: false, paused: false
         });
     }
     getMoveAwayFomFruitTween() {
         return this.scene.tweens.create({
             targets: this.carryingFruit ? [this, this.carryingFruit] : this,
-            x: "-= " + (this.isSideView ? Robot.lookingX[this.lookingIndex] * Robot.raiseAndLowerDistance : 0),
-            y: "-= " + (this.isSideView ? 0 : Robot.lookingY[this.lookingIndex] * Robot.raiseAndLowerDistance),
+            x: "-= " + (this.isSideView ? Robot.lookingX[this.lookingIndex] * Robot.liftAndDropDistance : 0),
+            y: "-= " + (this.isSideView ? 0 : Robot.lookingY[this.lookingIndex] * Robot.liftAndDropDistance),
             duration: Robot.duration / 2, ease: Robot.ease, repeat: 0, yoyo: false, paused: false
         });
     }
@@ -1096,9 +1171,39 @@ class Robot extends GridSprite {
             duration: Robot.duration, ease: Robot.ease, repeat: 0, yoyo: false, paused: false
         });
     }
-    aheadWrapper(repeats) {
+    aheadPromise(repeats) {
         return new Promise((resolve, reject) => {
             this.ahead(() => { console.log("resolved"); resolve(0); }, repeats);
+        });
+    }
+    backPromise(repeats) {
+        return new Promise((resolve, reject) => {
+            this.back(() => { console.log("resolved"); resolve(0); }, repeats);
+        });
+    }
+    leftPromise(repeats) {
+        return new Promise((resolve, reject) => {
+            this.left(() => { console.log("resolved"); resolve(0); }, repeats);
+        });
+    }
+    rightPromise(repeats) {
+        return new Promise((resolve, reject) => {
+            this.right(() => { console.log("resolved"); resolve(0); }, repeats);
+        });
+    }
+    liftPromise() {
+        return new Promise((resolve, reject) => {
+            this.lift(() => { console.log("resolved"); resolve(0); });
+        });
+    }
+    dropPromise() {
+        return new Promise((resolve, reject) => {
+            this.drop(() => { console.log("resolved"); resolve(0); });
+        });
+    }
+    peekPromise() {
+        return new Promise((resolve, reject) => {
+            this.peek(() => { console.log("resolved"); resolve(0); });
         });
     }
     runJSCode(myCode, onComplete, playSpeed) {
@@ -1125,16 +1230,16 @@ class Robot extends GridSprite {
                 robot.left(() => { robot.moving = false; robot.nextStepJS(); }, repeats);
             };
             interpreter.setProperty(globalObject, 'left', interpreter.createNativeFunction(leftWrapper));
-            var raiseWrapper = function () {
+            var liftWrapper = function () {
                 robot.moving = true;
-                robot.raise(() => { robot.moving = false; robot.nextStepJS(); });
+                robot.lift(() => { robot.moving = false; robot.nextStepJS(); });
             };
-            interpreter.setProperty(globalObject, 'raise', interpreter.createNativeFunction(raiseWrapper));
-            var lowerWrapper = function () {
+            interpreter.setProperty(globalObject, 'lift', interpreter.createNativeFunction(liftWrapper));
+            var dropWrapper = function () {
                 robot.moving = true;
-                robot.lower(() => { robot.moving = false; robot.nextStepJS(); });
+                robot.drop(() => { robot.moving = false; robot.nextStepJS(); });
             };
-            interpreter.setProperty(globalObject, 'lower', interpreter.createNativeFunction(lowerWrapper));
+            interpreter.setProperty(globalObject, 'drop', interpreter.createNativeFunction(dropWrapper));
             var peekWrapper = function () {
                 robot.moving = true;
                 return robot.peek(() => { robot.moving = false; robot.nextStepJS(); });
@@ -1218,7 +1323,7 @@ Robot.lookingX = [1, 0, -1, 0];
 Robot.lookingY = [0, 1, 0, -1];
 Robot.lookingBodyFrames = [["RightRaised", "DownRaised", "LeftRaised", "UpRaised"],
     ["RightLowered", "DownLowered", "LeftLowered", "UpLowered"]];
-Robot.raiseAndLowerDistance = 32;
+Robot.liftAndDropDistance = 32;
 Robot.carryingHeight = 32;
 const GRID_LEFT = 192;
 const GRID_TOP = 32;
@@ -1261,10 +1366,15 @@ class SceneBase extends Phaser.Scene {
     }
     runCodeOnAllRobots(playSpeed) {
         this.resetButtonAction();
-        let code = this.codeInput.value;
         if (this.languageSelect.value == "javascript") {
-            for (let robot of this.robots) {
-                robot.runJSCode(code, this.setRobotCompleted.bind(this), playSpeed);
+            let code = this.codeInput.value;
+            try {
+                for (let robot of this.robots) {
+                    robot.runJSCode(code, this.setRobotCompleted.bind(this), playSpeed);
+                }
+            }
+            catch (err) {
+                alert(err.toString());
             }
         }
         if (this.languageSelect.value == "python") {
@@ -1272,25 +1382,62 @@ class SceneBase extends Phaser.Scene {
                 if (steps == undefined) {
                     steps = 1;
                 }
-                return new Sk.misceval.promiseToSuspension(window["SceneBaseInstance"].robots[n].aheadWrapper(steps).then(() => Sk.builtin.none.none$));
+                return new Sk.misceval.promiseToSuspension(SceneBase.instance.robots[n].aheadPromise(steps).then(() => Sk.builtin.none.none$));
             });
-            let replacedCode = code.replace(/ahead\(/g, "ahead(0,");
-            Sk.configure({
-                output: () => { },
-                killableWhile: true,
-                killableFor: true,
-                __future__: Sk.python3
-            });
-            let stopExecution = false;
-            Sk.misceval.asyncToPromise(() => Sk.importMainWithBody("<stdin>", false, replacedCode, true), {
-                "*": () => {
-                    if (stopExecution)
-                        throw "Execution interrupted";
+            Sk.builtins.back = new Sk.builtin.func(function (n, steps) {
+                if (steps == undefined) {
+                    steps = 1;
                 }
-            }).catch(err => {
-                alert(err.toString());
-            }).finally(() => {
+                return new Sk.misceval.promiseToSuspension(SceneBase.instance.robots[n].backPromise(steps).then(() => Sk.builtin.none.none$));
             });
+            Sk.builtins.right = new Sk.builtin.func(function (n, steps) {
+                if (steps == undefined) {
+                    steps = 1;
+                }
+                return new Sk.misceval.promiseToSuspension(SceneBase.instance.robots[n].rightPromise(steps).then(() => Sk.builtin.none.none$));
+            });
+            Sk.builtins.left = new Sk.builtin.func(function (n, steps) {
+                if (steps == undefined) {
+                    steps = 1;
+                }
+                return new Sk.misceval.promiseToSuspension(SceneBase.instance.robots[n].leftPromise(steps).then(() => Sk.builtin.none.none$));
+            });
+            Sk.builtins.lift = new Sk.builtin.func(function (n) {
+                return new Sk.misceval.promiseToSuspension(SceneBase.instance.robots[n].liftPromise().then(() => Sk.builtin.none.none$));
+            });
+            Sk.builtins.drop = new Sk.builtin.func(function (n) {
+                return new Sk.misceval.promiseToSuspension(SceneBase.instance.robots[n].dropPromise().then(() => Sk.builtin.none.none$));
+            });
+            Sk.builtins.peek = new Sk.builtin.func((n) => {
+                let letter = SceneBase.instance.robots[n].peek(() => { });
+                return new Sk.builtins['str'](letter);
+            });
+            for (let i = 0; i < this.robots.length; i++) {
+                let code = this.codeInput.value;
+                code = code.replace(/ahead\(/g, `ahead(${i},`);
+                code = code.replace(/back\(/g, `back(${i},`);
+                code = code.replace(/right\(/g, `right(${i},`);
+                code = code.replace(/left\(/g, `left(${i},`);
+                code = code.replace(/lift\(\)/g, `lift(${i})`);
+                code = code.replace(/drop\(\)/g, `drop(${i})`);
+                code = code.replace(/peek\(\)/g, `peek(${i})`);
+                Sk.configure({
+                    output: (s) => { console.log(s); },
+                    killableWhile: true,
+                    killableFor: true,
+                    __future__: Sk.python3
+                });
+                let stopExecution = false;
+                Sk.misceval.asyncToPromise(() => Sk.importMainWithBody("<stdin>", false, code, true), {
+                    "*": () => {
+                        if (stopExecution)
+                            throw "Execution interrupted";
+                    }
+                }).catch(err => {
+                    alert(err.toString());
+                }).finally(() => {
+                });
+            }
         }
     }
     setRobotCompleted(robot) {

@@ -16,7 +16,7 @@ class Robot extends GridSprite {
   static lookingY = [0, 1, 0, -1];
   static lookingBodyFrames = [["RightRaised", "DownRaised", "LeftRaised", "UpRaised"],
   ["RightLowered", "DownLowered", "LeftLowered", "UpLowered"]];
-  static raiseAndLowerDistance = 32; //distance moved towards fruit before picking it up 
+  static liftAndDropDistance = 32; //distance moved towards fruit before picking it up 
   static carryingHeight = 32; //distance moved towards fruit before picking it up 
 
   _lookingIndex: number = 0; //0 = right, 1 = down, 2 = left, 3 = up //getter and setter
@@ -49,11 +49,11 @@ class Robot extends GridSprite {
       return;
     }
     let aheadTween = this.getAheadTween();
-    if (repeats > 1 ) {
-      aheadTween.on("complete",this.ahead.bind(this, onComplete, repeats - 1));
+    if (repeats > 1) {
+      aheadTween.on("complete", this.ahead.bind(this, onComplete, repeats - 1));
     }
     else {
-      aheadTween.on("complete",onComplete);
+      aheadTween.on("complete", onComplete);
     }
     aheadTween.play();
   }
@@ -64,14 +64,14 @@ class Robot extends GridSprite {
       if (onComplete) onComplete();
       return;
     }
-      let moveBackTween = this.getMoveBackTween();
-      if (repeats > 1) {
-        moveBackTween.on("complete",this.back.bind(this, onComplete, repeats - 1));
-      }
-      else {
-        moveBackTween.on("complete",onComplete);
-      }
-      moveBackTween.play();
+    let moveBackTween = this.getMoveBackTween();
+    if (repeats > 1) {
+      moveBackTween.on("complete", this.back.bind(this, onComplete, repeats - 1));
+    }
+    else {
+      moveBackTween.on("complete", onComplete);
+    }
+    moveBackTween.play();
   }
 
   right(onComplete, repeats) {
@@ -107,7 +107,7 @@ class Robot extends GridSprite {
 
 
 
-  raise(onComplete) {
+  lift(onComplete) {
     if (!this.isScoopDown) {
       if (onComplete) onComplete();
       return;
@@ -122,36 +122,36 @@ class Robot extends GridSprite {
         robot.setFrame(Robot.lookingBodyFrames[robot.isScoopDown ? 1 : 0][robot.lookingIndex]);
         if (fruit) {
           robot.grid.removeItem(fruit);
-          fruit.setPosition(robot.x, robot.y-Robot.carryingHeight);
+          fruit.setPosition(robot.x, robot.y - Robot.carryingHeight);
         }
         if (paramOnCompleteTween) paramOnCompleteTween.play();
-      } 
+      }
     };
 
     let moveTowardsTween = this.getMoveTowardsFruitTween();
-    if (this.lookingFruitNotBox && this.carryingFruit == null) { 
-      this.carryingFruit = this.lookingFruitNotBox; 
+    if (this.lookingFruitNotBox && this.carryingFruit == null) {
+      this.carryingFruit = this.lookingFruitNotBox;
     };
     let moveAwayTween = this.getMoveAwayFomFruitTween();
     if (onComplete) moveAwayTween.on("complete", onComplete);
-    moveTowardsTween.on("complete", 
-    liftScoopInjector(moveAwayTween, 
-      this, 
-      this.carryingFruit));
+    moveTowardsTween.on("complete",
+      liftScoopInjector(moveAwayTween,
+        this,
+        this.carryingFruit));
     moveTowardsTween.play();
   }
 
-  lower(onComplete) {
+  drop(onComplete) {
     if (this.isScoopDown) {
       if (onComplete) onComplete();
       return;
     }
 
-    let lowerScoopInjector = function (paramOnCompleteTween, 
-        robot: Robot, 
-        fruit: Food, 
-        coords, 
-        paramCanDrop: boolean) {
+    let dropScoopInjector = function (paramOnCompleteTween,
+      robot: Robot,
+      fruit: Food,
+      coords,
+      paramCanDrop: boolean) {
       var paramOnCompleteTween = paramOnCompleteTween;
       var robot = robot;
       let dropCoords = coords;
@@ -161,43 +161,43 @@ class Robot extends GridSprite {
         if (fruit) {
           if (canDrop) {
             //lower it
-            robot.grid.placeItem(fruit,dropCoords[0],dropCoords[1]);
-            
+            robot.grid.placeItem(fruit, dropCoords[0], dropCoords[1]);
+
             robot.isScoopDown = true;
-            robot.setFrame(Robot.lookingBodyFrames[robot.isScoopDown ? 1 : 0][robot.lookingIndex]);   
-            }
+            robot.setFrame(Robot.lookingBodyFrames[robot.isScoopDown ? 1 : 0][robot.lookingIndex]);
+          }
           else {
             //robot not allowed to drop scoop!
           }
         }
         else {
           robot.isScoopDown = true;
-          robot.setFrame(Robot.lookingBodyFrames[robot.isScoopDown ? 1 : 0][robot.lookingIndex]);   
+          robot.setFrame(Robot.lookingBodyFrames[robot.isScoopDown ? 1 : 0][robot.lookingIndex]);
         }
         if (paramOnCompleteTween) paramOnCompleteTween.play();
       }
     };
 
     let dropCoords = this.lookingXY;
-    let canDrop = (dropCoords != null)  && (this.carryingFruit != null) && this.grid.allowsItemToBePlaced(this.carryingFruit, dropCoords[0], dropCoords[1]);
+    let canDrop = (dropCoords != null) && (this.carryingFruit != null) && this.grid.allowsItemToBePlaced(this.carryingFruit, dropCoords[0], dropCoords[1]);
     let moveTowardsTween = this.getMoveTowardsFruitTween();
     let droppedFruit = this.carryingFruit;
     if (canDrop) this.carryingFruit = null; //do not move this line or the tween will move the fruit.
     let moveAwayTween = this.getMoveAwayFomFruitTween();
 
     if (onComplete) moveAwayTween.on("complete", onComplete);
-    moveTowardsTween.on("complete", lowerScoopInjector(moveAwayTween, 
-      this, 
+    moveTowardsTween.on("complete", dropScoopInjector(moveAwayTween,
+      this,
       droppedFruit,
       dropCoords,
       canDrop));
     moveTowardsTween.play();
   }
 
-  get lookingIndex():number { return this._lookingIndex;   }
-  set lookingIndex(value) { 
+  get lookingIndex(): number { return this._lookingIndex; }
+  set lookingIndex(value) {
     this._lookingIndex = value;
-    this.setFrame(Robot.lookingBodyFrames[this.isScoopDown ? 1 : 0][value]); 
+    this.setFrame(Robot.lookingBodyFrames[this.isScoopDown ? 1 : 0][value]);
   }
   /*
   get lookingMapCoordsBehind() {
@@ -229,45 +229,84 @@ class Robot extends GridSprite {
     return null;
   }
 
-  getMoveTowardsFruitTween():Phaser.Tweens.Tween { return this.scene.tweens.create(
-    {
-      targets: this.carryingFruit ? [this,this.carryingFruit] : this,
-      x: "+= " + (this.isSideView ? Robot.lookingX[this.lookingIndex] * Robot.raiseAndLowerDistance : 0),
-      y: "+= " + (this.isSideView ? 0 : Robot.lookingY[this.lookingIndex] * Robot.raiseAndLowerDistance),
+  getMoveTowardsFruitTween(): Phaser.Tweens.Tween {
+    return this.scene.tweens.create(
+      {
+        targets: this.carryingFruit ? [this, this.carryingFruit] : this,
+        x: "+= " + (this.isSideView ? Robot.lookingX[this.lookingIndex] * Robot.liftAndDropDistance : 0),
+        y: "+= " + (this.isSideView ? 0 : Robot.lookingY[this.lookingIndex] * Robot.liftAndDropDistance),
+        duration: Robot.duration / 2, ease: Robot.ease, repeat: 0, yoyo: false, paused: false
+      });
+  }
+
+  getMoveAwayFomFruitTween(): Phaser.Tweens.Tween {
+    return this.scene.tweens.create({
+      targets: this.carryingFruit ? [this, this.carryingFruit] : this,
+      x: "-= " + (this.isSideView ? Robot.lookingX[this.lookingIndex] * Robot.liftAndDropDistance : 0),
+      y: "-= " + (this.isSideView ? 0 : Robot.lookingY[this.lookingIndex] * Robot.liftAndDropDistance),
       duration: Robot.duration / 2, ease: Robot.ease, repeat: 0, yoyo: false, paused: false
     });
   }
 
-  getMoveAwayFomFruitTween():Phaser.Tweens.Tween { return this.scene.tweens.create({
-      targets: this.carryingFruit ? [this,this.carryingFruit] : this,
-      x: "-= " + (this.isSideView ? Robot.lookingX[this.lookingIndex] * Robot.raiseAndLowerDistance : 0) ,
-      y: "-= " + (this.isSideView ? 0 : Robot.lookingY[this.lookingIndex] * Robot.raiseAndLowerDistance),
-      duration: Robot.duration / 2, ease: Robot.ease, repeat: 0, yoyo: false, paused: false
-    });
-  }
-
-  getMoveBackTween():Phaser.Tweens.Tween { return this.scene.tweens.create({
-      targets: this.carryingFruit ? [this,this.carryingFruit] : this,
+  getMoveBackTween(): Phaser.Tweens.Tween {
+    return this.scene.tweens.create({
+      targets: this.carryingFruit ? [this, this.carryingFruit] : this,
       x: "-= " + Robot.lookingX[this.lookingIndex] * TILE_SIZE,
       y: "-= " + Robot.lookingY[this.lookingIndex] * TILE_SIZE,
       duration: Robot.duration, ease: Robot.ease, repeat: 0, yoyo: false, paused: false
     });
   }
 
-  getAheadTween():Phaser.Tweens.Tween  { return this.scene.tweens.create({
-      targets: this.carryingFruit ? [this,this.carryingFruit] : this,
+  getAheadTween(): Phaser.Tweens.Tween {
+    return this.scene.tweens.create({
+      targets: this.carryingFruit ? [this, this.carryingFruit] : this,
       x: "+= " + Robot.lookingX[this.lookingIndex] * TILE_SIZE,
       y: "+= " + Robot.lookingY[this.lookingIndex] * TILE_SIZE,
-      duration: Robot.duration, ease: Robot.ease, repeat: 0, yoyo: false, paused: false 
+      duration: Robot.duration, ease: Robot.ease, repeat: 0, yoyo: false, paused: false
     });
   }
 
-  aheadWrapper(repeats) {
-    return new Promise((resolve,reject) => {
-      this.ahead(() => {console.log("resolved");resolve(0);},repeats);
+  aheadPromise(repeats) {
+    return new Promise((resolve, reject) => {
+      this.ahead(() => { console.log("resolved"); resolve(0); }, repeats);
     });
   }
-  
+
+  backPromise(repeats) {
+    return new Promise((resolve, reject) => {
+      this.back(() => { console.log("resolved"); resolve(0); }, repeats);
+    });
+  }
+
+  leftPromise(repeats) {
+    return new Promise((resolve, reject) => {
+      this.left(() => { console.log("resolved"); resolve(0); }, repeats);
+    });
+  }
+
+  rightPromise(repeats) {
+    return new Promise((resolve, reject) => {
+      this.right(() => { console.log("resolved"); resolve(0); }, repeats);
+    });
+  }
+
+  liftPromise() {
+    return new Promise((resolve, reject) => {
+      this.lift(() => {console.log("resolved");resolve(0);});
+    });
+  }
+
+  dropPromise() {
+    return new Promise((resolve, reject) => {
+      this.drop(() => { console.log("resolved"); resolve(0); });
+    });
+  }
+
+  peekPromise() {
+    return new Promise((resolve, reject) => {
+      this.peek(() => { console.log("resolved"); resolve(0); });
+    });
+  }
 
   runJSCode(myCode, onComplete, playSpeed) {
     var robot = this;
@@ -298,17 +337,17 @@ class Robot extends GridSprite {
       };
       interpreter.setProperty(globalObject, 'left', interpreter.createNativeFunction(leftWrapper));
 
-      var raiseWrapper = function () {
+      var liftWrapper = function () {
         robot.moving = true;
-        robot.raise(() => { robot.moving = false; robot.nextStepJS(); });
+        robot.lift(() => { robot.moving = false; robot.nextStepJS(); });
       };
-      interpreter.setProperty(globalObject, 'raise', interpreter.createNativeFunction(raiseWrapper));
+      interpreter.setProperty(globalObject, 'lift', interpreter.createNativeFunction(liftWrapper));
 
-      var lowerWrapper = function () {
+      var dropWrapper = function () {
         robot.moving = true;
-        robot.lower(() => { robot.moving = false; robot.nextStepJS(); });
+        robot.drop(() => { robot.moving = false; robot.nextStepJS(); });
       };
-      interpreter.setProperty(globalObject, 'lower', interpreter.createNativeFunction(lowerWrapper));
+      interpreter.setProperty(globalObject, 'drop', interpreter.createNativeFunction(dropWrapper));
 
       var peekWrapper = function () {
         robot.moving = true;
@@ -354,18 +393,18 @@ class Robot extends GridSprite {
 
       //remove from grid, if within one
       if (this.grid && this.mapCoords) {
-        this.grid.robot = null; 
-        if (this.configObject) this.grid.configGrid.removeObject(this.configObject); 
+        this.grid.robot = null;
+        if (this.configObject) this.grid.configGrid.removeObject(this.configObject);
         this.configObject = null;
       }
       //reset grids
       SceneBase.instance.resetButtonAction();
     }
     //constrain to grid
-    if (dragX < this.grid.leftX) dragX = this.grid.leftX+1;
-    if (dragX > this.grid.rightX) dragX = this.grid.rightX-1;
-    if (dragY < this.grid.topY) dragY = this.grid.topY+1;
-    if (dragY > this.grid.bottomY) dragY = this.grid.bottomY-1;
+    if (dragX < this.grid.leftX) dragX = this.grid.leftX + 1;
+    if (dragX > this.grid.rightX) dragX = this.grid.rightX - 1;
+    if (dragY < this.grid.topY) dragY = this.grid.topY + 1;
+    if (dragY > this.grid.bottomY) dragY = this.grid.bottomY - 1;
 
     this.x = dragX;
     this.y = dragY;
@@ -379,16 +418,16 @@ class Robot extends GridSprite {
 
     let grid = SceneBase.instance.getContainingGrid(this.x, this.y);
     if (grid.topY == this.grid.topY) { //cannot be dragged to another grid
-      let [x, y] = this.grid.snapToTileCentres(this.x,this.y);
+      let [x, y] = this.grid.snapToTileCentres(this.x, this.y);
       this.x = x;
       this.y = y;
-  
+
       //if food exists at the same location, destroy it
       let food = this.grid.getFoodOrBoxAtXY(x, y);
       if (food) {
         food.destroy();
       }
-  
+
       //its a brand new grid that has been made, but the same old robot
       this.grid = grid;
       this.grid.robot = this;

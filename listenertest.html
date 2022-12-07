@@ -8,7 +8,7 @@
             
 try {
   let ch = new BroadcastChannel('teachometer-lesson');
-  ch.addEventListener('message', function(paramChannel) {
+  ch.addEvent('message', function(paramChannel) {
       var channel = paramChannel;
       return (e) => {
         if (typeof(e.data) == "string" && e.data.substring(0,6) == "foobot") {

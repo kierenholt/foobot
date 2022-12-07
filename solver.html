@@ -4,38 +4,58 @@
 <head>
   <meta charset="UTF-8" />
   <title>FOOBOT</title>
+  <script src="skulpt.min.js" type="text/javascript"></script> 
+  <script src="skulpt-stdlib.js" type="text/javascript"></script> 
+
   <script src="acorn.js"></script>
   <script src="phaser.js"></script>
   <script src="foobot.js"></script>
+  
   <link rel="stylesheet" href="style.css">
+  
 </head>
 
-<body onload="ready()">
+<body onload="ready()" id="solver">
 
-  
+  <div id="header">
+    <a href="index.html">
+    <img src="pageImages/header.png" />
+  </a>
+</div>
 
+<div id="gameContainer" >
 <div id="gameDiv">
-  <p>Visit this page to rebuild this puzzle: <a id="levelMapSpan" href="#">#</a></p>
-  <!--- CANVAS IS CREATED HERE --->
 </div> <!-- END OF GAMEDIV -->
+<input type="range" min="-2" max="2" id="zoomSlider" step="0.2"/>
+</div>
 
-<div id="buttons">
+<div id="controls">
 
-  <div id="left">
+    <select id="languageSelect">
+      <option selected>javascript</option>
+      <option>python</option>
+    </select>
+
     <textarea id="codeInput">ahead();</textarea>
-    <p><span id="characterCountSpan">#</span>&nbsp;characters. Limit <span id="characterLimitSpan">#</span></p>
-    <p><a target="_blank" href="help.html">Click here for help</a></p>
-  </div>
-  
-  <div id="right">
+
+    <p id="characterCount">
+      <span id="characterCountSpan">#</span>&nbsp;characters. Limit <span id="characterLimitSpan">#</span>
+    </p>
+    <p>
     <img id="playButton" src="assets/play.png" title="play"></img>
     <img id="fastPlayButton" src="assets/fastplay.png" title="fastplay"></img>
     <img id="resetButton" src="assets/reset-small.png" title="reset"></img>
     <span id="timerSpan"></span>
-  </div>
+  </p>
+  
 </div>
 
+<div id="footer">
+  <p><a href="index.html">&lt;&lt;&lt; Go back to index &lt;&lt;&lt; </a></p>
+  <p>    <a target="_blank" href="help.html">Read instructions here</a></p>
+  <p>To edit this puzzle click here <a id="levelMapSpan" href="#">#</a></p>
 
+</div>
 
   <script>
 
@@ -74,6 +94,8 @@
         characterCountSpan.innerText = codeInput.value.length;
         characterLimitSpan.innerText = config.charLimit > 0 ? config.charLimit.toString() : "OFF";
 
+      
+      let w = new Completion("languageSelect");
 
       //game last
       var game = new fooBotSolver("gameDiv",
@@ -81,8 +103,14 @@
         "playButton",
         "resetButton",
         "fastPlayButton",
+        "languageSelect",
         config);
       
+      document.getElementById("zoomSlider").oninput = (e) => {
+        let canvas = document.getElementsByTagName("canvas").item(0);
+        canvas.style.scale = Math.pow(2,e.target.value); 
+        canvas.style.transformOrigin =  "left top";
+      };
     }
     
     

@@ -4,24 +4,32 @@
 <head>
   <meta charset="UTF-8" />
   <title>FOOBOT</title>
+  <script src="skulpt.min.js" type="text/javascript"></script> 
+  <script src="skulpt-stdlib.js" type="text/javascript"></script> 
+
   <script src="acorn.js"></script>
   <script src="phaser.js"></script>
   <script src="foobot.js"></script>
   
-  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js" type="text/javascript"></script> 
-  <script src="skulpt/dist/skulpt.min.js" type="text/javascript"></script> 
-  <script src="skulpt/dist/skulpt-stdlib.js" type="text/javascript"></script> 
   
   <link rel="stylesheet" href="style.css">
 </head>
 
-<body onload="ready()">
+<body onload="ready()" id="builder">
   
-<div id="gameDiv">
-  <p>Visit this page to solve: <a id="levelMapSpan" href="#">#</a></p>
+  <div id="header">
+    <a href="index.html">
+    <img src="pageImages/header.png" />
+    </a>
+    <p>To solve this puzzle click here <a id="levelMapSpan" href="#">#</a></p>
+
+  </div>
+
+
+  <div id="gameContainer">
+  <div id="gameDiv">
   <!--- CANVAS IS CREATED HERE --->
 </div> <!-- END OF GAMEDIV -->
-
 
 <div id="settings">    
     
@@ -36,23 +44,38 @@
 
 </div>
 
+<input type="range" min="-2" max="2" id="zoomSlider" step="0.2"/>
 
-<div id="buttons">
-  <div id="left">
-    <textarea id="codeInput">ahead();</textarea>
+</div>
+
+
+
+
+<div id="controls">
+    
     <select id="languageSelect">
       <option selected>javascript</option>
       <option>python</option>
     </select>
-    <p><span id="characterCountSpan">#</span>&nbsp;characters</p>
-    <p><a target="_blank" href="help.html">Click here for help</a></p>
-  </div>
-  <div id="right">
-    <img id="playButton" src="assets/play.png" title="play"></img>
-    <img id="fastPlayButton" src="assets/fastplay.png" title="fastplay"></img>
-    <img id="resetButton" src="assets/reset-small.png" title="reset"></img>
-    <span id="timerSpan"></span>
-  </div>
+    <textarea id="codeInput">ahead();</textarea>
+    
+
+    <p id="characterCount">
+      <span id="characterCountSpan">#</span>&nbsp;characters
+    </p>
+    
+    <p>
+      <img id="playButton" src="assets/play.png" title="play"></img>
+      <img id="fastPlayButton" src="assets/fastplay.png" title="fastplay"></img>
+      <img id="resetButton" src="assets/reset-small.png" title="reset"></img>
+      <span id="timerSpan"></span>
+    </p>
+</div>
+
+
+<div id="footer">
+  <p><a href="index.html">&lt;&lt;&lt; Go back to index &lt;&lt;&lt; </a></p>
+  <p>    <a target="_blank" href="help.html">Read instructions here</a></p>
 </div>
 
   <script>
@@ -111,7 +134,9 @@
         }
         characterCountSpan.innerText = codeInput.value.length;
 
-    
+        //stores selected language in local storage
+        let w = new Completion("languageSelect");
+
       //game last
       var game = new fooBotBuilder("gameDiv",
         "codeInput",
@@ -120,6 +145,12 @@
         "fastPlayButton",
         "languageSelect",
         config);
+
+      document.getElementById("zoomSlider").oninput = (e) => {
+        let canvas = document.getElementsByTagName("canvas").item(0);
+        canvas.style.scale = Math.pow(2,e.target.value); 
+        canvas.style.transformOrigin =  "left top";
+      };
     }
     
     
